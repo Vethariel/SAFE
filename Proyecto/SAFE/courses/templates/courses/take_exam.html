@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resolver evaluación - SAFE{% endblock %}
+
+{% block extra_css %}
+  <style>
+    .exam-card { border:1px solid #e5e7eb; border-radius:12px; padding:14px; background:white; }
+    .question { border:1px solid #e5e7eb; border-radius:10px; padding:12px; background:#f9fafb; margin-top:10px; }
+    .chip { display:inline-block; padding:4px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; margin-right:6px; }
+    .muted { color:#6b7280; }
+    .option { display:flex; align-items:center; gap:8px; padding:6px 0; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="exam-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div>
+          <div class="muted" style="font-size:13px;">Curso</div>
+          <div style="font-weight:600;">{{ course.name }}</div>
+          <div class="muted" style="font-size:13px;margin-top:2px;">{{ course.description|default:"" }}</div>
+        </div>
+        <a class="chip" href="{% url 'course_detail_accessible' course.id %}">Volver al curso</a>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div style="font-weight:600; font-size:18px;">{{ content.title }}</div>
+        <div class="muted" style="font-size:13px;">{{ content.description|default:"" }}</div>
+      </div>
+
+      {% if questions %}
+        <form method="post" style="margin-top:16px;">
+          {% csrf_token %}
+          {% for q in questions %}
+            <div class="question">
+              <div style="font-weight:600;">{{ forloop.counter }}. {{ q.text|default:"Pregunta" }}</div>
+              {% if q.options %}
+                <div style="margin-top:8px; display:grid; gap:6px;">
+                  {% for opt in q.options %}
+                    <label class="option">
+                      <input
+                        type="{% if q.allows_multiple %}checkbox{% else %}radio{% endif %}"
+                        name="q-{{ q.id }}"
+                        value="{{ opt.id }}"
+                        {% if results %}
+                          {% for res in results %}
+                            {% if res.question == q.text and opt.id in res.selected %}
+                              checked
+                            {% endif %}
+                          {% endfor %}
+                        {% endif %}
+                      />
+                      <span>{{ opt.text|default:"Opción" }}</span>
+                      {% if results %}
+                        {% for res in results %}
+                          {% if res.question == q.text and opt.id in res.correct_ids %}
+                            <span class="chip" style="background:#d1fae5;color:#065f46;">Correcta</span>
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                    </label>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+
+          {% if results %}
+            <div style="margin-top:12px;font-weight:600;">Resultado: {{ score }}/{{ total }}</div>
+          {% endif %}
+
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button type="submit" class="chip" style="background:#111827;color:white;">Enviar respuestas</button>
+            <a class="chip" href="{% url 'course_detail_accessible' course.id %}">Volver al curso</a>
+          </div>
+        </form>
+      {% else %}
+        <p class="muted" style="margin-top:12px;">Este examen no tiene preguntas configuradas.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
