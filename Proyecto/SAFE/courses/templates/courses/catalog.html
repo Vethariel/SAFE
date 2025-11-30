@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-  Catálogo - SAFE Academy
+  Catalogo - SAFE Academy
 {% endblock %}
 
 {% block extra_css %}
@@ -11,47 +11,75 @@
 
 {% block content %}
   <div class="container">
-    <!-- Header -->
     <div class="page-header">
       <div class="page-header-content">
-        <h1>Cursos Disponibles</h1>
+        <p class="eyebrow">Catalogo</p>
+        <h1>Cursos visibles para ti</h1>
+        <p class="page-subtitle">Revisa el estado de los cursos segun tu rol e inscripciones.</p>
       </div>
     </div>
 
-    <!-- Cursos Grid -->
-    {% if courses %}
+    {% if course_cards %}
       <div class="courses-grid">
-        {% for course in courses %}
-          <div class="course-card">
-            <!-- Course Header Image -->
-            <div class="course-card-header">
-              {% if course.header_img %}
-                <img src="{{ course.header_img.url }}" alt="{{ course.name }}" />
-              {% else %}
-                <span class="placeholder-icon">📚</span>
-              {% endif %}
-            </div>
-
-            <!-- Course Info -->
-            <div class="course-card-body">
-              <div class="card-header-row">
-                <h3 class="card-title">{{ course.name }}</h3>
-                <span class="status-badge status-{{ course.status }}">{{ course.get_status_display }}</span>
+        {% for card in course_cards %}
+          {% with course=card.course %}
+            <div class="course-card">
+              <div class="course-card-header">
+                {% if course.header_img %}
+                  <img src="{{ course.header_img.url }}" alt="{{ course.name }}" />
+                {% else %}
+                  <span class="placeholder-icon">SAFE</span>
+                {% endif %}
+                <div class="card-badges">
+                  <span class="status-badge status-{{ course.status }}">{{ card.status_label }}</span>
+                  <span class="pill audience-pill">{{ card.audience_label }}</span>
+                </div>
               </div>
 
-              <p class="card-description">{{ course.description|default:'Sin descripción' }}</p>
+              <div class="course-card-body">
+                <div class="card-header-row">
+                  <div>
+                    <p class="eyebrow">Curso</p>
+                    <h3 class="card-title">{{ course.name }}</h3>
+                  </div>
+                  {% if card.inscription_count %}
+                    <span class="pill muted-pill">{{ card.inscription_count }} personas inscritas</span>
+                  {% endif %}
+                </div>
 
-              <div class="card-meta">
-                <span>{{ course.duration_hours|default:'0' }}h</span>
-                <span>{{ course.modules.count }} módulos</span>
+                <p class="card-description">{{ course.description|default:'Sin descripcion' }}</p>
+
+                <div class="card-meta">
+                  <span class="meta-pill">{{ card.modules_count|default:'0' }} actividades</span>
+                  <span class="meta-pill">{{ course.duration_hours|default:'0' }}h</span>
+                  <span class="meta-pill">{{ card.total_contents|default:'0' }} contenidos</span>
+                </div>
+
+                <div class="progress-row">
+                  <div class="progress-label">
+                    {% if card.progress_percent is not None %}
+                      {{ card.completed_contents }} / {{ card.total_contents }} contenidos ({{ card.progress_percent|floatformat:0 }}%)
+                    {% else %}
+                      Progreso no disponible
+                    {% endif %}
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" style="width: {{ card.progress_percent|default:0|floatformat:0 }}%;"></div>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  <a class="btn-primary" href="{% url 'course_detail_accessible' course.id %}">Abrir</a>
+                  <a class="btn-secondary" href="{% url 'course_detail_accessible' course.id %}">Mas detalles</a>
+                </div>
               </div>
             </div>
-          </div>
+          {% endwith %}
         {% endfor %}
       </div>
     {% else %}
       <div class="empty-state">
-        <p class="empty-text">No hay cursos creados aún</p>
+        <p class="empty-text">No hay cursos visibles por ahora.</p>
       </div>
     {% endif %}
   </div>

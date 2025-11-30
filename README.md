@@ -89,4 +89,15 @@ Este proyecto utiliza Docker para facilitar la instalación y despliegue del sof
 ## Notas
 
 - Asegúrate de que los puertos necesarios estén libres.
-- Consulta los archivos Docker (`Dockerfile`, `docker-compose.yaml`) para más detalles de configuración.
+- Consulta los archivos Docker (`Dockerfile`, `docker-compose.yml`) para más detalles de configuración.
+
+## Usuario administrador de prueba
+
+Tras las migraciones, puedes crear o actualizar un superusuario de demo para validar permisos de administración:
+
+```bash
+docker compose exec -T web python manage.py ensure_default_admin
+# Credenciales por defecto: usuario "admin" / contraseña "Admin123!"
+```
+
+Personaliza los valores con banderas (`--username`, `--email`, `--password`, `--role`, `--reset-password`) o variables de entorno (`DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD`, `DEFAULT_ADMIN_ROLE`).

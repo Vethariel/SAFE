@@ -9,7 +9,13 @@ from accounts.models import AppUser
 from courses.models import Course
 from enrollments.models import CourseInscription, PathInscription
 from . import models
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
+from enrollments.services import get_courses_for_user, get_paths_for_user
+
+
+@login_required
 def home(request):
     return render(request, "enrollments/home.html")
 
@@ -40,3 +46,11 @@ def enroll_user(request):
     
     # Redirigir asegurando que volvemos a la pestaña de usuarios
     return redirect(reverse('admin_panel') + '?tab=usuarios')
+    """Dashboard básico de aprendizaje usando visibilidad RF5."""
+    courses = get_courses_for_user(request.user)
+    paths = get_paths_for_user(request.user)
+    return render(
+        request,
+        "enrollments/home.html",
+        {"courses": courses, "paths": paths},
+    )

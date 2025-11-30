@@ -55,6 +55,12 @@ def exisit_email(email):
         return False
     return True
 
+
+def unique_email(email):
+    """Retorna True si existe un usuario con el email dado."""
+
+    return AppUser.objects.filter(email=email).exists()
+
 def to_signup(request):
     return render(request, "accounts/sign_up.html")
 

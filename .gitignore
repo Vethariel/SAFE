@@ -17,3 +17,5 @@ migrations/
 temp/
 media/
 .ruff_cache/
+
+Proyecto/SAFE/accounts/management/

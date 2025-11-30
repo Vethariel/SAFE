@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from .models import AppUser
 from accounts.views import unique_email
+from accounts.models import AppUser
 import unittest
 
 '''
@@ -169,7 +170,6 @@ class TestUniqueUsername(TestCase):
 
         # Verify we now have 2 users
         self.assertEqual(User.objects.count(), 2)
-
 
 if __name__ == "__main__":
     unittest.main()

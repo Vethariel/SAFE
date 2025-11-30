@@ -1,10 +1,61 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Home — SAFE{% endblock %}
+{% block title %}Mi aprendizaje - SAFE{% endblock %}
 
 {% block extra_css %}
+  <style>
+    .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); }
+    .card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:white; }
+    .chip { display:inline-block; padding:4px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; margin-right:6px; }
+    .muted { color:#6b7280; }
+  </style>
 {% endblock %}
 
 {% block content %}
+  <div class="container">
+    <h1>Mis cursos</h1>
+    {% if courses %}
+      <div class="grid">
+        {% for course in courses %}
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-weight:600;">{{ course.name }}</div>
+              <span class="chip">{{ course.get_status_display }}</span>
+            </div>
+            <div class="muted" style="font-size:13px;margin-top:6px;">
+              {{ course.description|default:"Sin descripción" }}
+            </div>
+            <div class="muted" style="font-size:12px;margin-top:6px;">
+              {{ course.duration_hours|default:"0" }}h · {{ course.modules.count }} módulo(s)
+            </div>
+            <div style="margin-top:10px;">
+              <a class="chip" href="{% url 'course_detail_accessible' course.id %}">Ir al curso →</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Aún no tienes cursos visibles.</p>
+    {% endif %}
+
+    <h2 style="margin-top:24px;">Mis rutas</h2>
+    {% if paths %}
+      <div class="grid">
+        {% for path in paths %}
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-weight:600;">{{ path.name }}</div>
+              <span class="chip">{{ path.get_status_display }}</span>
+            </div>
+            <div class="muted" style="font-size:13px;margin-top:6px;">
+              {{ path.description|default:"Sin descripción" }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No tienes rutas asignadas.</p>
+    {% endif %}
+  </div>
 {% endblock %}
