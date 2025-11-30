@@ -5,67 +5,174 @@
 
 {% block extra_css %}
   <style>
-    .course-header { display:flex; gap:16px; align-items:center; margin-bottom:24px; }
-    .course-header img { width:120px; height:120px; object-fit:cover; border-radius:12px; border:1px solid #e5e7eb; }
-    .chip { display:inline-block; padding:4px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; margin-right:6px; }
-    .module-card { border:1px solid #e5e7eb; border-radius:12px; padding:12px; margin-bottom:12px; background:white; }
-    .content-card { border:1px solid #e5e7eb; border-radius:10px; padding:10px; margin-top:8px; background:#f9fafb; }
-    .muted { color:#6b7280; }
+    .hero { background: linear-gradient(135deg, #111827, #0f1720); color: #f8fafc; padding: 32px; border-radius: 16px; display:flex; align-items:center; gap:20px; margin-bottom:20px; }
+    .hero img { width: 120px; height: 120px; border-radius: 12px; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); }
+    .progress-track { width: 100%; height: 10px; background: rgba(255,255,255,0.2); border-radius: 999px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #d4af37, #b8962c); }
+    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+    .module-list { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .module-item { padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; text-decoration:none; color: inherit; display:flex; justify-content: space-between; gap:12px; align-items:center; }
+    .module-item.active { border-color: var(--safe-gold, #d4af37); background: #fdf7e7; }
+    .module-item.locked { opacity: 0.5; cursor: not-allowed; }
+    .module-meta { font-size: 12px; color: #6b7280; }
+    .content-panel { background: white; border:1px solid #e5e7eb; border-radius:12px; padding:16px; min-height: 400px; }
+    .content-card { border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-bottom:10px; background:#f9fafb; }
+    .chip { display:inline-block; padding:4px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; margin-right:6px; color:#111827; }
+    .content-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .btn { padding: 8px 14px; border-radius: 8px; border:none; cursor:pointer; font-weight:600; text-decoration:none; display:inline-block; }
+    .btn-gold { background: #d4af37; color: #0f1720; }
+    .btn-secondary { background: white; color: #111827; border:1px solid #e5e7eb; }
+    .locked-note { color:#6b7280; padding:16px; border:1px dashed #e5e7eb; border-radius:12px; background:#f9fafb; text-align:center; }
+    @media(max-width: 900px){ .layout { grid-template-columns: 1fr; } .hero{ flex-direction: column; align-items: flex-start;} }
   </style>
 {% endblock %}
 
 {% block content %}
   <div class="container">
-    <div class="course-header">
+    <div class="hero">
       {% if course.header_img %}
         <img src="{{ course.header_img.url }}" alt="{{ course.name }}">
       {% else %}
-        <div style="width:120px;height:120px;border-radius:12px;border:1px solid #e5e7eb;display:grid;place-items:center;">📚</div>
+        <img src="{% static 'images/logo.png' %}" alt="{{ course.name }}">
       {% endif %}
-      <div>
-        <h1>{{ course.name }}</h1>
-        <p class="muted">{{ course.description|default:"Sin descripción" }}</p>
-        <div>
+      <div style="flex:1;">
+        <p style="margin:0; opacity:0.9;">SAFE Academy</p>
+        <h1 style="margin:4px 0 8px;">{{ course.name }}</h1>
+        <p style="margin:0 0 10px; opacity:0.9;">{{ course.description|default:"Sin descripción" }}</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <span class="chip">{{ course.get_status_display }}</span>
+          <span class="chip">{{ modules_state|length }} módulos</span>
           <span class="chip">{{ course.duration_hours|default:"0" }}h</span>
-          <span class="chip">{{ modules|length }} módulo(s)</span>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;">
+            <span>Progreso</span>
+            <span>{{ progress.completed }}/{{ progress.total }} ({{ progress.percent|floatformat:0 }}%)</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: {{ progress.percent|floatformat:0 }}%;"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    {% if modules_with_contents %}
-      {% for module, contents in modules_with_contents %}
-        <div class="module-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="layout">
+      <div class="module-list">
+        <p style="margin:0 0 8px; font-weight:700;">Módulos</p>
+        {% for m in modules_state %}
+          {% with module=m.module %}
+            <a class="module-item {% if not module.id in unlocked_module_ids %}locked{% endif %} {% if selected_module and selected_module.id == module.id %}active{% endif %}"
+               {% if module.id in unlocked_module_ids %}href="?module={{ module.id }}"{% endif %}>
+              <div>
+                <div style="font-weight:600;">{{ module.name }}</div>
+                <div class="module-meta">{{ m.completed_contents }}/{{ m.total_contents }} contenidos</div>
+              </div>
+              {% if m.completed %}
+                <span class="chip" style="background:#d1fae5;color:#065f46;">Completado</span>
+              {% elif not module.id in unlocked_module_ids %}
+                <span class="chip">Bloqueado</span>
+              {% else %}
+                <span class="chip">En curso</span>
+              {% endif %}
+            </a>
+          {% endwith %}
+        {% empty %}
+          <p class="module-meta">Este curso aún no tiene módulos.</p>
+        {% endfor %}
+      </div>
+
+      <div class="content-panel">
+        {% if selected_module %}
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <div>
-              <div style="font-weight:600;">Módulo {{ forloop.counter }}: {{ module.name }}</div>
-              <div class="muted" style="font-size:13px;">{{ module.description|default:"Sin descripción" }}</div>
+              <p style="margin:0; color:#6b7280;">Lección</p>
+              <h2 style="margin:0;">{{ selected_module.name }}</h2>
             </div>
-            <div class="chip">{{ module.contents.count }} contenido(s)</div>
+            <a class="chip" href="{% url 'catalog' %}">Volver</a>
           </div>
 
-          {% if contents %}
-            {% for content in contents %}
-              <div class="content-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <div style="font-weight:600;">{{ content.title }}</div>
-                  <span class="chip">{{ content.get_block_type_display }}</span>
-                </div>
-                <div class="muted" style="font-size:13px;margin-top:6px;">
-                  {{ content.description|default:"Sin descripción" }}
-                </div>
-                {% if content.is_mandatory %}
-                  <div class="chip" style="background:#fef3c7;color:#92400e;">Obligatorio</div>
-                {% endif %}
-              </div>
-            {% endfor %}
+          {% if not selected_module.id in unlocked_module_ids %}
+            <div class="locked-note">Completa el módulo anterior para desbloquear este contenido.</div>
           {% else %}
-            <div class="muted" style="margin-top:8px;">No hay contenidos visibles para tu rol en este módulo.</div>
+            {% if content_rows %}
+              {% for row in content_rows %}
+                {% with content=row.content %}
+                  <div class="content-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                      <div>
+                        <div style="font-weight:600;">{{ content.title }}</div>
+                        <div style="font-size:13px; color:#6b7280;">{{ content.description|default:"Sin descripción" }}</div>
+                      </div>
+                      <span class="chip">{{ content.get_block_type_display }}</span>
+                    </div>
+
+                    {% if content.block_type == "quiz" %}
+                      <div style="margin-top:8px; font-size:13px; color:#6b7280;">Examen</div>
+                      <div class="content-actions">
+                        {% if progress.inscription and row.visible %}
+                          <a class="btn btn-gold" href="{% url 'take_exam' content.id %}">Responder examen</a>
+                        {% else %}
+                          <span class="chip">No disponible para este perfil</span>
+                        {% endif %}
+                        {% if row.completed %}<span class="chip" style="background:#d1fae5;color:#065f46;">Completado</span>{% endif %}
+                      </div>
+                    {% elif content.content_type == "assignment" %}
+                      <div style="margin-top:8px; font-size:13px; color:#6b7280;">Tarea</div>
+                      {% if row.completed %}
+                        <span class="chip" style="background:#d1fae5;color:#065f46;">Enviado</span>
+                      {% endif %}
+                      {% if request.user.role == 'analistaTH' %}
+                        <div class="content-actions">
+                          <a class="btn btn-secondary" href="{% url 'assignment_submissions' content.id %}">Ver envíos</a>
+                        </div>
+                      {% elif row.visible and progress.inscription %}
+                        <form class="content-actions" method="post" action="{% url 'submit_assignment' content.id %}" enctype="multipart/form-data">
+                          {% csrf_token %}
+                          <input type="file" name="file" required>
+                          <button type="submit" class="btn btn-gold">Enviar tarea</button>
+                        </form>
+                      {% endif %}
+                    {% else %}
+                      <div style="margin-top:8px; font-size:13px; color:#6b7280;">Contenido</div>
+                      {% if content.block_type == "text" %}
+                        <div style="font-size:13px; color:#111827; margin-top:6px;">{{ content.description|default:"Sin descripción" }}</div>
+                      {% elif content.block_type == "image" and content.material and content.material.file %}
+                        <div style="margin-top:8px;">
+                          <img src="{{ content.material.file.url }}" alt="{{ content.title }}" style="max-width:100%; border-radius:8px; border:1px solid #e5e7eb;">
+                        </div>
+                      {% elif content.block_type == "pdf" and content.material and content.material.file %}
+                        <div class="content-actions">
+                          <a class="btn btn-secondary" href="{{ content.material.file.url }}" target="_blank" rel="noopener">Abrir PDF</a>
+                        </div>
+                      {% elif content.block_type == "video" and content.material and content.material.file %}
+                        <div style="margin-top:8px;">
+                          <video controls src="{{ content.material.file.url }}" style="width:100%; border-radius:8px; border:1px solid #e5e7eb;"></video>
+                        </div>
+                      {% endif %}
+                      <div class="content-actions">
+                        {% if row.completed %}
+                          <span class="chip" style="background:#d1fae5;color:#065f46;">Completado</span>
+                        {% elif row.visible and progress.inscription %}
+                          <form method="post" action="{% url 'mark_content_complete' content.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-gold">Marcar como hecho</button>
+                          </form>
+                        {% else %}
+                          <span class="chip">Bloqueado</span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endwith %}
+              {% endfor %}
+            {% else %}
+              <div class="locked-note">Este módulo aún no tiene contenido asignado.</div>
+            {% endif %}
           {% endif %}
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="muted">Este curso aún no tiene módulos.</p>
-    {% endif %}
+        {% else %}
+          <div class="locked-note">No se encontró el módulo seleccionado.</div>
+        {% endif %}
+      </div>
+    </div>
   </div>
 {% endblock %}
