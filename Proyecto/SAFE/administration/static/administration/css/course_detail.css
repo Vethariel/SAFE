@@ -504,6 +504,18 @@ body {
     border: 1px solid #e0e7ff;
 }
 
+.chip-static {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--safe-border);
+    background: var(--safe-card-alt);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--safe-dark);
+}
+
 .content-empty {
     color: var(--safe-ink2);
     font-style: italic;
@@ -685,6 +697,39 @@ body {
 
 .btn-primary:hover {
     background: var(--safe-gold-hover);
+}
+
+.exam-mode-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.exam-mode-btn {
+    flex: 1;
+    border-radius: 999px;
+    border: 1px solid var(--safe-border);
+    background: var(--safe-card-alt);
+    color: var(--safe-dark);
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.exam-mode-btn.is-active {
+    background: var(--safe-gold);
+    border-color: var(--safe-gold);
+    color: var(--safe-dark);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.exam-mode-panel {
+    display: none;
+}
+
+.exam-mode-panel.is-active {
+    display: block;
 }
 
 .btn-secondary {
@@ -1118,4 +1163,92 @@ body {
     background: #b91c1c !important;
     box-shadow: none !important;
     transform: none !important;
+}
+/* Drop Zone Style */
+.drop-zone {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    border: 2px dashed #e5e7eb;
+    border-radius: 14px;
+    background: #fafafa;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.drop-zone:hover {
+    border-color: #d4af37;
+    background: #fff;
+}
+/* --- MODAL DE FEEDBACK (Estilos Compartidos) --- */
+
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    z-index: 2000; /* Alto z-index para tapar todo */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.feedback-content {
+    background-color: #fff;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    padding: 32px 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.feedback-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feedback-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.icon-warning { 
+    background-color: #fef3c7; 
+    color: #d97706; 
+}
+
+.feedback-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+}
+
+.feedback-text {
+    font-size: 15px;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.btn-wide {
+    width: 100%;
+    justify-content: center;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }

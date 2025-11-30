@@ -1,6 +1,6 @@
 from django import forms
 from courses.models import Course, Module, Content, Material, Exam, Assignment
-
+from django.core.validators import FileExtensionValidator
 
 class CourseForm(forms.ModelForm):
     class Meta:
@@ -171,3 +171,34 @@ class MaterialForm(forms.ModelForm):
                     )
 
         return cleaned_data
+
+class ExamUploadForm(forms.Form):
+    DIFFICULTY_CHOICES = [
+        ('facil', 'Fácil'),
+        ('media', 'Media'),
+        ('dificil', 'Difícil'),
+    ]
+
+    # Título para el contenido (ej. "Examen Final")
+    title = forms.CharField(
+        label="Título del Examen",
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'input', 'placeholder': 'Ej. Examen Parcial'})
+    )
+
+    difficulty = forms.ChoiceField(
+        choices=DIFFICULTY_CHOICES,
+        label="Nivel de dificultad",
+        widget=forms.Select(attrs={'class': 'input'})
+    )
+
+    file = forms.FileField(
+        label="Archivo de preguntas (.txt)",
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=['txt'],
+                message="Solo se permiten archivos .txt"
+            )
+        ],
+        widget=forms.FileInput(attrs={'style': 'display: none;', 'id': 'exam-file-input'})
+    )

@@ -71,6 +71,7 @@ def parse_evaluacion(texto: str):
     return preguntas
 
 
+
 def is_txt_file(uploaded_file) -> bool:
     """
     Verifica si el archivo subido corresponde a un .txt

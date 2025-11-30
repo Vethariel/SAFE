@@ -22,55 +22,97 @@
 
     <!-- USUARIOS -->
     {% if active_tab == 'usuarios' %}
-      <div class="section-header">
-        <h2>Gestión de usuarios</h2>
-        <a class="btn-nuevo">Nuevo usuario</a>
-      </div>
+  
+  <div class="card-panel">
+    
+    <div class="panel-header">
+      <h2 class="panel-title">Gestión de usuarios</h2>
+      <button type="button" class="btn btn-gold" onclick="document.getElementById('createUserModal').style.display='flex'">
+        Nuevo usuario
+      </button>
+    </div>
 
-      <div class="tab-panel">
-        <table class="table">
-          <thead>
+    <div class="table-responsive">
+     <table class="table-custom">
+        <thead>
+          <tr>
+            <th class="th-name">Nombre/s</th>
+            
+            <th class="th-name">Apellido/s</th>
+            
+            <th class="th-name">Username</th>
+            
+            <th class="th-email">Email</th>
+            <th class="th-role">Rol</th>
+            <th class="th-status">Estado</th>
+            <th class="th-actions text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
             <tr>
-              <th style="width:80px">ID</th>
-              <th>Nombre</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th style="width:140px"></th>
+              <td class="font-weight-medium">{{ u.first_name|default:"-" }}</td>
+              
+              <td class="font-weight-medium">{{ u.last_name|default:"-" }}</td>
+              
+              <td class="text-muted">{{ u.username }}</td>
+
+              <td class="text-muted">{{ u.email }}</td>
+              
+              <td>
+                <form method="post" action="{% url 'user_update_role' u.id %}">
+                  {% csrf_token %}
+                  <select name="role" class="role-select" onchange="this.form.submit()">
+                    <option value="colaborador" {% if u.role == 'colaborador' %}selected{% endif %}>
+                      Colaborador
+                    </option>
+                    <option value="supervisor" {% if u.role == 'supervisor' %}selected{% endif %}>
+                      Supervisor
+                    </option>
+                    <option value="analistaTH" {% if u.role == 'analistaTH' %}selected{% endif %}>
+                      Analista TH
+                    </option>
+                  </select>
+                </form>
+              </td>
+              
+              <td>
+                <span class="status-badge status-{{ u.status }}">
+                  {{ u.get_status_display }}
+                </span>
+              </td>
+              
+              <td class="text-right">
+                <div class="actions-group">
+                  <form method="post" action="{% url 'user_toggle_status' u.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    {% if u.status == 'active' %}
+                      <button type="submit" class="action-link text-danger" title="Desactivar usuario">
+                        Desactivar
+                      </button>
+                    {% else %}
+                      <button type="submit" class="action-link text-success" title="Activar usuario">
+                        Activar
+                      </button>
+                    {% endif %}
+                  </form>
+                  
+                  <button type="button" class="action-link text-primary" onclick="openEnrollModal('{{ u.id }}', '{{ u.username }}')">
+                    Inscribir a curso
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {% for u in usuarios %}
-              <tr>
-                <td>{{ u.id }}</td>
-                <td>{{ u.username }}</td>
-                <td>{{ u.email }}</td>
-                <td>
-                  <form method="post" action="{% url 'user_change_role' u.id %}">
-                    {% csrf_token %}
-                    <select name="role" class="role-select">
-                      {% for value, label in role_choices %}
-                        <option value="{{ value }}" {% if u.role == value %}selected{% endif %}>{{ label }}</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit" class="btn-secondary">Actualizar</button>
-                  </form>
-                </td>
-                <td>
-                  <form method="post" action="{% url 'user_del' u.id %}" style="display:inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-danger" onclick="return confirm('¿Eliminar {{ u.username }}?')">Eliminar</button>
-                  </form>
-                </td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td class="empty" colspan="5">Sin usuarios</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% endif %}
+          {% empty %}
+            <tr>
+              <td colspan="7" class="empty-state">No hay usuarios registrados.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
 
     <!-- CURSOS -->
     {% if active_tab == 'cursos' %}
@@ -137,5 +179,172 @@
         <div class="empty-state">Gráficos y estadísticas aquí</div>
       </div>
     {% endif %}
+  </div>
+  <!-- MODAL PARA INSCRIBIR A CURSO -->
+  <div id="enrollModal" class="modal-backdrop">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h3 id="modalTitle">Inscribir colaborador a curso</h3>
+        <span class="close-modal" onclick="closeEnrollModal()">&times;</span>
+      </div>
+
+      <form method="post" action="{% url 'enroll_user' %}">
+        {% csrf_token %}
+        
+        <input type="hidden" name="user_id" id="modalUserId">
+
+        <div class="modal-body">
+          <label for="courseSelect" class="label">Curso</label>
+          <select name="course_id" id="courseSelect" class="input" required>
+            <option value="" disabled selected>Selecciona un curso</option>
+            {% for course in courses %}
+              {% if course.status == 'active' %}
+                  <option value="{{ course.id }}">{{ course.name }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeEnrollModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Inscribir</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    // Función para abrir el modal y setear los datos
+    function openEnrollModal(userId, username) {
+      const modal = document.getElementById('enrollModal');
+      const inputId = document.getElementById('modalUserId');
+      const title = document.getElementById('modalTitle');
+      
+      // Asignamos el ID del usuario al input oculto
+      inputId.value = userId;
+      
+      // (Opcional) Ponemos el nombre en el título para que se vea pro
+      title.innerText = `Inscribir a ${username} en un curso`;
+      
+      // Mostramos el modal
+      modal.style.display = 'flex';
+    }
+
+    // Función para cerrar el modal
+    function closeEnrollModal() {
+      const modal = document.getElementById('enrollModal');
+      modal.style.display = 'none';
+    }
+
+    // Cerrar si se hace clic fuera de la cajita blanca
+    window.onclick = function(event) {
+      const modal = document.getElementById('enrollModal');
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+  </script>
+
+  <!-- ================= MODAL DE MENSAJES (FEEDBACK) ================= -->
+  {% if messages %}
+  <div id="feedbackModal" class="modal-backdrop" style="display: flex;">
+    <div class="modal-content feedback-content">
+      
+      {% for message in messages %}
+        <!-- Icono Dinámico -->
+        <div class="feedback-icon {% if message.tags == 'success' %}icon-success{% else %}icon-warning{% endif %}">
+          {% if message.tags == 'success' %}
+            <!-- Chulito Verde (SVG) -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          {% else %}
+            <!-- Signo de Exclamación (SVG) -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          {% endif %}
+        </div>
+
+        <!-- Título y Texto -->
+        <h3 class="feedback-title">
+          {% if message.tags == 'success' %}¡Excelente!{% else %}Atención{% endif %}
+        </h3>
+        <p class="feedback-text">{{ message }}</p>
+
+        <!-- Botón Aceptar -->
+        <button type="button" class="btn btn-gold btn-wide" onclick="document.getElementById('feedbackModal').style.display='none'">
+          Aceptar
+        </button>
+      {% endfor %}
+
+    </div>
+  </div>
+  {% endif %}
+  <!-- Crear Usuario -->
+  <div id="createUserModal" class="modal-backdrop">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h3>Crear usuario</h3>
+        <span class="close-modal" onclick="document.getElementById('createUserModal').style.display='none'">&times;</span>
+      </div>
+
+      <form method="post" action="{% url 'admin_create_user' %}">
+        {% csrf_token %}
+        
+        <div class="modal-body">
+          
+          <label class="label">Username</label>
+          <input type="text" name="username" class="input" required placeholder="ej. juanperez">
+          
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+              <div style="flex: 1;">
+                  <label class="label">Nombre/s</label>
+                  <input type="text" name="first_name" class="input" required placeholder="Juan">
+              </div>
+              <div style="flex: 1;">
+                  <label class="label">Apellido/s</label>
+                  <input type="text" name="last_name" class="input" required placeholder="Pérez">
+              </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+              <label class="label">Correo electrónico</label>
+              <input type="email" name="email" class="input" required placeholder="correo@empresa.com">
+          </div>
+
+          <div style="margin-top: 10px;">
+              <label class="label">Rol</label>
+              <select name="role" class="input">
+                  <option value="colaborador">Colaborador</option>
+                  <option value="analistaTH">Analista TH</option>
+                  <option value="supervisor">Supervisor</option>
+              </select>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+              <div style="flex: 1;">
+                  <label class="label">Contraseña</label>
+                  <input type="password" name="password" class="input" required placeholder="********">
+              </div>
+              <div style="flex: 1;">
+                  <label class="label">Confirmar</label>
+                  <input type="password" name="confirm_password" class="input" required placeholder="********">
+              </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('createUserModal').style.display='none'">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Crear</button>
+        </div>
+      </form>
+
+    </div>
   </div>
 {% endblock %}

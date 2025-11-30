@@ -2,6 +2,9 @@ import unittest
 from unittest.mock import MagicMock
 from courses.models import Material, Content, Course
 from administration.forms import CourseForm, ContentForm
+from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from .forms import ExamUploadForm
 from accounts.models import AppUser
 from administration.models import RoleChangeLog
 from django.test import TestCase
@@ -304,6 +307,85 @@ class ContentFormValidationTests(unittest.TestCase):
                 if not esperado_valido:
                     self.assertIn("title", form.errors)
 
+class ExamUploadFormTests(TestCase):
+    """
+    Pruebas para el formulario de carga de exámenes en Administración.
+    Valida que solo acepte .txt y requiera título y dificultad.
+    """
+
+    def test_upload_valid_txt_file(self):
+        """
+        Caso feliz: Archivo .txt, título y dificultad presentes.
+        """
+        file_content = b"Q:P1|Pregunta|1\nO:P1-A|Opcion|1"
+        file = SimpleUploadedFile(
+            "preguntas.txt",
+            file_content, 
+            content_type="text/plain"
+        )
+        
+        # El formulario nuevo pide 'title' y 'difficulty', NO 'course'
+        form_data = {
+            'title': 'Examen Final de Prueba',
+            'difficulty': 'media'
+        }
+        file_data = {'file': file}
+
+        form = ExamUploadForm(form_data, file_data)
+
+        self.assertTrue(form.is_valid(), f"El formulario debería ser válido. Errores: {form.errors}")
+
+    def test_reject_invalid_extension_file(self):
+        """
+        Debe fallar si subo una imagen png.
+        """
+        file_content = b"Esto es una imagen falsa."
+        file = SimpleUploadedFile(
+            "imagen.png", 
+            file_content, 
+            content_type="image/png"
+        )
+        
+        form_data = {
+            'title': 'Examen con error',
+            'difficulty': 'media'
+        }
+        file_data = {'file': file}
+
+        form = ExamUploadForm(form_data, file_data)
+
+        self.assertFalse(form.is_valid(), "El formulario debería rechazar .png")
+        
+        self.assertIn('file', form.errors)
+        self.assertTrue(
+            any("Solo se permiten archivos" in str(error) for error in form.errors['file']),
+            f"No se encontró el mensaje de error esperado. Recibido: {form.errors['file']}"
+        )
+
+    def test_form_is_invalid_if_no_file_is_sent(self):
+        form_data = {
+            'title': 'Examen sin archivo',
+            'difficulty': 'media'
+        }
+        file_data = {} # Sin archivo
+
+        form = ExamUploadForm(form_data, file_data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('file', form.errors)
+
+    def test_form_is_invalid_if_no_title(self):
+        file = SimpleUploadedFile("test.txt", b"content", content_type="text/plain")
+        
+        form_data = {
+            'difficulty': 'media'
+        }
+        file_data = {'file': file}
+
+        form = ExamUploadForm(form_data, file_data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('title', form.errors)
 class ChangeRoleServiceTests(TestCase):
     def setUp(self):
         self.analyst = User.objects.create_user(
