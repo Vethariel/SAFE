@@ -504,6 +504,18 @@ body {
     border: 1px solid #e0e7ff;
 }
 
+.chip-static {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--safe-border);
+    background: var(--safe-card-alt);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--safe-dark);
+}
+
 .content-empty {
     color: var(--safe-ink2);
     font-style: italic;
@@ -685,6 +697,39 @@ body {
 
 .btn-primary:hover {
     background: var(--safe-gold-hover);
+}
+
+.exam-mode-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.exam-mode-btn {
+    flex: 1;
+    border-radius: 999px;
+    border: 1px solid var(--safe-border);
+    background: var(--safe-card-alt);
+    color: var(--safe-dark);
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.exam-mode-btn.is-active {
+    background: var(--safe-gold);
+    border-color: var(--safe-gold);
+    color: var(--safe-dark);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.exam-mode-panel {
+    display: none;
+}
+
+.exam-mode-panel.is-active {
+    display: block;
 }
 
 .btn-secondary {
