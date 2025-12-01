@@ -7,6 +7,87 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'teams/css/supervisor_panel.css' %}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .charts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    .chart-wrapper {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .filters-bar {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .filter-group label {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    .filter-input {
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        min-width: 150px;
+    }
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border-left: 4px solid #c5a47e;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1f2937;
+    }
+    .stat-label {
+      color: #6b7280;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .enrollment-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    .enrollment-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .enrollment-item:last-child {
+      border-bottom: none;
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -42,9 +123,33 @@
                   <td class="font-weight-medium">{{ member.first_name }} {{ member.last_name }}</td>
                   <td>{{ member.email }}</td>
                   <td class="text-right">
-                    <button class="btn-secondary" onclick="openEnrollModal('{{ member.id }}', '{{ member.first_name }}')">Inscribir</button>
+                    <button class="btn-secondary" onclick="openManageModal('{{ member.id }}', '{{ member.first_name }}')">Gestionar</button>
                   </td>
                 </tr>
+
+                <!-- Hidden Data for JS -->
+                <div id="data-user-{{ member.id }}" style="display:none;">
+                  <div class="current-enrollments">
+                    {% for inscription in member.course_inscriptions.all %}
+                      <div class="enrollment-item">
+                        <span><span class="badge badge-course">Curso</span> {{ inscription.course.name }}</span>
+                        <form method="post" action="{% url 'unenroll_user_course' inscription.id %}" style="display:inline;">
+                          {% csrf_token %}
+                          <button type="submit" class="text-danger small-btn" onclick="return confirm('¿Desinscribir?')">&times;</button>
+                        </form>
+                      </div>
+                    {% endfor %}
+                    {% for inscription in member.path_inscriptions.all %}
+                      <div class="enrollment-item">
+                        <span><span class="badge badge-path">Ruta</span> {{ inscription.learning_path.name }}</span>
+                        <!-- Path unenrollment logic would go here if implemented -->
+                      </div>
+                    {% endfor %}
+                    {% if not member.course_inscriptions.all and not member.path_inscriptions.all %}
+                      <div class="p-3 text-muted text-center">Sin inscripciones activas</div>
+                    {% endif %}
+                  </div>
+                </div>
               {% empty %}
                 <tr>
                   <td colspan="3" class="text-center" style="padding: 2rem; color: #6b7280;">No tienes miembros en tu equipo.</td>
@@ -76,15 +181,78 @@
     {% endif %}
 
     {% if active_tab == 'estadisticas' %}
-      <div class="card-panel">
-        <div class="panel-header">
-          <h2 class="panel-title">Estadísticas y Progreso</h2>
-          <div class="actions-group">
-            <select class="role-select" style="min-width: 150px;">
-              <option value="todos">Todos</option>
-              <!-- Aquí irían más opciones de filtro -->
+      <!-- Filtros -->
+      <form method="get" class="filters-bar">
+        <input type="hidden" name="tab" value="estadisticas">
+        
+        <div class="filter-group">
+            <label>Curso</label>
+            <select name="course_id" class="filter-input">
+                <option value="">Todos</option>
+                {% for course in available_courses %}
+                    <option value="{{ course.id }}" {% if request.GET.course_id == course.id|stringformat:"s" %}selected{% endif %}>{{ course.name }}</option>
+                {% endfor %}
             </select>
-          </div>
+        </div>
+
+        <div class="filter-group">
+            <label>Estudiante</label>
+            <select name="student_id" class="filter-input">
+                <option value="">Todos</option>
+                {% for member in team_members %}
+                    <option value="{{ member.id }}" {% if request.GET.student_id == member.id|stringformat:"s" %}selected{% endif %}>{{ member.first_name }} {{ member.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Estado</label>
+            <select name="status" class="filter-input">
+                <option value="">Todos</option>
+                <option value="enrolled" {% if request.GET.status == 'enrolled' %}selected{% endif %}>Inscrito</option>
+                <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>En Progreso</option>
+                <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completado</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Desde</label>
+            <input type="date" name="date_start" class="filter-input" value="{{ request.GET.date_start }}">
+        </div>
+
+        <div class="filter-group">
+            <label>Hasta</label>
+            <input type="date" name="date_end" class="filter-input" value="{{ request.GET.date_end }}">
+        </div>
+
+        <button type="submit" class="btn-primary" style="height: 38px;">Filtrar</button>
+        <a href="?tab=estadisticas" class="btn-secondary" style="height: 38px; display: flex; align-items: center; text-decoration: none;">Limpiar</a>
+      </form>
+
+      <!-- KPIs -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.total_members }}</div>
+          <div class="stat-label">Miembros</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.total_inscriptions }}</div>
+          <div class="stat-label">Inscripciones</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.completion_rate }}%</div>
+          <div class="stat-label">Tasa Completitud</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.completed_courses }}</div>
+          <div class="stat-label">Completados</div>
+        </div>
+      </div>
+
+      <!-- Tabla Detalle (Movida al inicio) -->
+      <div class="card-panel" style="margin-bottom: 2rem;">
+        <div class="panel-header">
+          <h2 class="panel-title">Detalle de Progreso</h2>
         </div>
 
         <div class="table-responsive">
@@ -94,47 +262,150 @@
                 <th class="th-name">Colaborador</th>
                 <th class="th-course">Curso</th>
                 <th class="th-status">Estado</th>
-                <th class="th-actions text-right"></th>
+                <th>Progreso</th>
+                <th class="th-date">Fecha Inscripción</th>
+                <th class="th-date">Última Actividad</th>
               </tr>
             </thead>
             <tbody>
               {% for inscription in team_progress %}
                 <tr>
-                  <td class="font-weight-medium">
-                    {{ inscription.app_user.first_name }} {{ inscription.app_user.last_name }}
-                    <div class="text-muted" style="font-size: 0.8em;">{{ inscription.app_user.email }}</div>
-                  </td>
+                  <td class="font-weight-medium">{{ inscription.app_user.first_name }} {{ inscription.app_user.last_name }}</td>
                   <td>{{ inscription.course.name }}</td>
                   <td>
                     <span class="status-badge status-{{ inscription.status }}">{{ inscription.get_status_display }}</span>
                   </td>
-                  <td class="text-right">
-                    <form method="post" action="{% url 'unenroll_user_course' inscription.id %}" style="display:inline;">
-                      {% csrf_token %}
-                      <button type="submit" class="text-danger" onclick="return confirm('¿Desinscribir a este usuario?')">Desinscribir</button>
-                    </form>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="width: {{ inscription.progress }}%; background: #c5a47e; height: 100%;"></div>
+                        </div>
+                        <span style="font-size: 0.8em; color: #6b7280;">{{ inscription.progress }}%</span>
+                    </div>
+                  </td>
+                  <td class="text-muted">{{ inscription.enrollment_date|date:'d M Y' }}</td>
+                  <td class="text-muted">
+                    {% if inscription.last_activity %}
+                        {{ inscription.last_activity|date:'d M Y' }}
+                    {% else %}
+                        -
+                    {% endif %}
                   </td>
                 </tr>
               {% empty %}
                 <tr>
-                  <td colspan="4" class="text-center" style="padding: 2rem; color: #6b7280;">No hay progreso registrado para tu equipo.</td>
+                  <td colspan="6" class="text-center" style="padding: 2rem; color: #6b7280;">No hay progreso registrado.</td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- Gráficas -->
+      <div class="charts-container">
+        <div class="chart-wrapper" style="grid-column: span 2;">
+            <h3 class="panel-title" style="margin-bottom: 1rem;">Actividad Reciente (Contenidos Completados)</h3>
+            <canvas id="timelineChart" style="max-height: 300px;"></canvas>
+        </div>
+        <div class="chart-wrapper">
+            <h3 class="panel-title" style="margin-bottom: 1rem;">Progreso por Curso</h3>
+            <canvas id="courseChart"></canvas>
+        </div>
+        <div class="chart-wrapper">
+            <h3 class="panel-title" style="margin-bottom: 1rem;">Top Estudiantes (Progreso)</h3>
+            <canvas id="studentChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Scripts Gráficas -->
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const data = JSON.parse('{{ charts_data|escapejs }}');
+            
+            // 1. Activity Chart (Bar - GitHub style analogy)
+            new Chart(document.getElementById('timelineChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.timeline.map(d => d.date),
+                    datasets: [{
+                        label: 'Actividades Completadas',
+                        data: data.timeline.map(d => d.count),
+                        backgroundColor: '#c5a47e',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // 2. Course Progress (Bar)
+            new Chart(document.getElementById('courseChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.course_progress.map(d => d.course__name),
+                    datasets: [{
+                        label: 'Progreso Promedio (%)',
+                        data: data.course_progress.map(d => d.avg_progress),
+                        backgroundColor: '#3b82f6'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    scales: {
+                        x: { max: 100 }
+                    }
+                }
+            });
+
+            // 3. Student Progress (Bar)
+            new Chart(document.getElementById('studentChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.student_progress.slice(0, 10).map(d => d.app_user__username),
+                    datasets: [{
+                        label: 'Progreso Promedio (%)',
+                        data: data.student_progress.slice(0, 10).map(d => d.avg_progress),
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { max: 100 }
+                    }
+                }
+            });
+        });
+      </script>
     {% endif %}
   </div>
 
-  <!-- Modal Inscribir -->
-  <div id="enrollModal" class="modal-backdrop">
-    <div class="modal-content">
+  <!-- Modal Gestionar (Inscribir/Desinscribir) -->
+  <div id="manageModal" class="modal-backdrop">
+    <div class="modal-content" style="max-width: 600px;">
       <div class="modal-header">
-        <h3 id="enrollModalTitle">Inscribir a Usuario</h3>
-        <span class="close-modal" onclick="closeEnrollModal()">&times;</span>
+        <h3 id="manageModalTitle">Gestionar Usuario</h3>
+        <span class="close-modal" onclick="closeManageModal()">&times;</span>
       </div>
       <div class="modal-body">
+        <!-- Sección: Inscripciones Actuales -->
+        <h4 class="label" style="margin-bottom: 0.5rem;">Inscripciones Actuales</h4>
+        <div id="currentEnrollmentsContainer" class="enrollment-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #eee;" />
+
+        <!-- Sección: Nueva Inscripción -->
+        <h4 class="label" style="margin-bottom: 0.5rem;">Nueva Inscripción</h4>
         <div style="margin-bottom: 1rem; display: flex; gap: 10px;">
           <button class="btn-secondary" onclick="showCourseForm()" style="flex:1;">Curso</button>
           <button class="btn-secondary" onclick="showPathForm()" style="flex:1;">Ruta</button>
@@ -144,50 +415,49 @@
           {% csrf_token %}
           <input type="hidden" name="user_id" id="enrollCourseUserId" />
           <div class="form-group" style="margin-bottom: 1rem;">
-            <label class="label">Seleccionar Curso</label>
             <select name="course_id" class="input" required>
+              <option value="">-- Seleccionar Curso --</option>
               {% for course in available_courses %}
                 <option value="{{ course.id }}">{{ course.name }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeEnrollModal()">Cancelar</button>
-            <button type="submit" class="btn-primary">Inscribir</button>
-          </div>
+          <button type="submit" class="btn-primary btn-wide">Inscribir a Curso</button>
         </form>
 
         <form id="enrollPathForm" method="post" action="{% url 'enroll_user_path' %}" style="display:none;">
           {% csrf_token %}
           <input type="hidden" name="user_id" id="enrollPathUserId" />
           <div class="form-group" style="margin-bottom: 1rem;">
-            <label class="label">Seleccionar Ruta</label>
             <select name="path_id" class="input" required>
+              <option value="">-- Seleccionar Ruta --</option>
               {% for path in available_paths %}
                 <option value="{{ path.id }}">{{ path.name }}</option>
               {% endfor %}
             </select>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeEnrollModal()">Cancelar</button>
-            <button type="submit" class="btn-primary">Inscribir</button>
-          </div>
+          <button type="submit" class="btn-primary btn-wide">Inscribir a Ruta</button>
         </form>
       </div>
     </div>
   </div>
 
   <script>
-    function openEnrollModal(userId, userName) {
-      document.getElementById('enrollModal').style.display = 'flex'
-      document.getElementById('enrollModalTitle').innerText = 'Inscribir a ' + userName
+    function openManageModal(userId, userName) {
+      document.getElementById('manageModal').style.display = 'flex'
+      document.getElementById('manageModalTitle').innerText = 'Gestionar a ' + userName
       document.getElementById('enrollCourseUserId').value = userId
       document.getElementById('enrollPathUserId').value = userId
-      showCourseForm() // Default
+    
+      // Populate current enrollments
+      var content = document.getElementById('data-user-' + userId).innerHTML
+      document.getElementById('currentEnrollmentsContainer').innerHTML = content
+    
+      showCourseForm() // Default view
     }
     
-    function closeEnrollModal() {
-      document.getElementById('enrollModal').style.display = 'none'
+    function closeManageModal() {
+      document.getElementById('manageModal').style.display = 'none'
     }
     
     function showCourseForm() {
@@ -202,7 +472,7 @@
     
     // Close modal if clicked outside
     window.onclick = function (event) {
-      var modal = document.getElementById('enrollModal')
+      var modal = document.getElementById('manageModal')
       if (event.target == modal) {
         modal.style.display = 'none'
       }
