@@ -1,17 +1,11 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Mi Perfil - SAFE{% endblock %}
+{% block title %}Mi Perfil — SAFE{% endblock %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'accounts/css/profile.css' %}">
-  <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}">
-  <link rel="stylesheet" href="{% static 'courses/css/catalog.css' %}">
-  <style>
-    .page-section { margin-top: 24px; }
-    body { background: #1e293b !important; }
-    .main-content { background: #1e293b; }
-  </style>
+  <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}"> 
 {% endblock %}
 
 {% block content %}
@@ -61,78 +55,34 @@
         </div>
     </div>
 
-    <h1 class="page-title page-section">Mis cursos</h1>
+    <h1 class="page-title">Mis cursos</h1>
 
-    <div class="profile-card" style="padding: 0; border: none; background: transparent;">
-        {% if course_cards %}
-          <div class="courses-grid">
-            {% for card in course_cards %}
-              {% with course=card.course %}
-                <div class="course-card">
-                  <div class="course-card-header">
-                    {% if course.header_img %}
-                      <img src="{{ course.header_img.url }}" alt="{{ course.name }}" />
-                    {% else %}
-                      <span class="placeholder-icon">SAFE</span>
-                    {% endif %}
-                    <div class="card-badges">
-                      <span class="status-badge status-{{ course.status }}">{{ course.get_status_display }}</span>
-                      <span class="pill audience-pill">{{ card.audience_label }}</span>
+    <div class="profile-card">
+
+        {% if inscriptions %}
+            <div class="courses-grid">
+                {% for inscription in inscriptions %}
+                    <div class="course-card-mini">
+                        <div class="course-header-mini"></div>
+                        
+                        <div class="course-body-mini">
+                            <h3 class="course-title-mini">{{ inscription.course.name }}</h3>
+                            <div class="course-info-mini">
+                                {{ inscription.course.duration_hours|default:"0" }} horas • {{ inscription.course.modules.count }} módulos
+                            </div>
+                            
+                            <a href="{% url 'course_detail' inscription.course.id %}" class="btn-open-course">
+                                Abrir
+                            </a>
+                        </div>
                     </div>
-                  </div>
-
-                  <div class="course-card-body">
-                    <div class="card-header-row">
-                      <div>
-                        <p class="eyebrow">Curso</p>
-                        <h3 class="card-title">{{ course.name }}</h3>
-                      </div>
-                      {% if card.inscription_count %}
-                        <span class="pill muted-pill">{{ card.inscription_count }} personas inscritas</span>
-                      {% endif %}
-                    </div>
-
-                    <p class="card-description">{{ course.description|default:'Sin descripcion' }}</p>
-
-                    <div class="card-meta">
-                      <span class="meta-pill">{{ card.modules_count|default:'0' }} actividades</span>
-                      <span class="meta-pill">{{ course.duration_hours|default:'0' }}h</span>
-                      <span class="meta-pill">{{ card.total_contents|default:'0' }} contenidos</span>
-                    </div>
-
-                    <div class="progress-row">
-                      <div class="progress-label">
-                        {% if card.progress_percent is not None %}
-                          {{ card.completed_contents }} / {{ card.total_contents }} contenidos ({{ card.progress_percent|floatformat:0 }}%)
-                        {% else %}
-                          Progreso no disponible
-                        {% endif %}
-                      </div>
-                      <div class="progress-track">
-                        <div class="progress-fill" style="width: {{ card.progress_percent|default:0|floatformat:0 }}%;"></div>
-                      </div>
-                    </div>
-
-                    <div class="card-actions">
-                      {% if card.can_open %}
-                        <a class="btn-primary" href="{% url 'course_detail_accessible' course.id %}">Abrir</a>
-                        <a class="btn-secondary" href="{% url 'course_detail_accessible' course.id %}">Más detalles</a>
-                      {% else %}
-                        <button class="btn-primary btn-disabled" type="button" disabled>No inscrito</button>
-                        <span class="eyebrow">Debes estar inscrito para abrir</span>
-                      {% endif %}
-                    </div>
-                  </div>
-                </div>
-              {% endwith %}
-            {% endfor %}
-          </div>
+                {% endfor %}
+            </div>
         {% else %}
-          <div style="padding: 40px; text-align: center; background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; color: #6b7280;">
-              Aún no estás inscrito en ningún curso.
-          </div>
+            <div style="padding: 40px; text-align: center; background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; color: #6b7280;">
+                Aún no estás inscrito en ningún curso.
+            </div>
         {% endif %}
-    </div>
 
 </div>
 
