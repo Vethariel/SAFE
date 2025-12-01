@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -67,7 +68,11 @@ def parse_evaluacion(texto: str):
             es_correcta = flag.strip() == "1"
 
             pregunta_actual["opciones"].append(
-                {"id": oid.strip(), "texto": texto_opt.strip(), "es_correcta": es_correcta}
+                {
+                    "id": oid.strip(),
+                    "texto": texto_opt.strip(),
+                    "es_correcta": es_correcta,
+                }
             )
 
         else:
@@ -83,7 +88,6 @@ def parse_evaluacion(texto: str):
             raise ValueError(f"La pregunta '{p['id']}' no tiene opción correcta")
 
     return preguntas
-
 
 
 def is_txt_file(uploaded_file) -> bool:
@@ -153,19 +157,21 @@ def course_detail_accessible(request, pk):
     completed_ids = set()
     content_progress_map = {}
     if inscription:
-        completed_qs = ContentProgress.objects.filter(
-            course_inscription=inscription
-        )
+        completed_qs = ContentProgress.objects.filter(course_inscription=inscription)
         for cp in completed_qs:
             if cp.is_completed:
-                completed_ids.add(cp.content_id)
-            content_progress_map[cp.content_id] = cp
+                completed_ids.add(cp.content_id)  # pyright: ignore[reportAttributeAccessIssue]
+            content_progress_map[cp.content_id] = cp  # pyright: ignore[reportAttributeAccessIssue]
 
     # determine unlocked modules
     unlocked_ids = set()
     module_states = []
     prev_completed = True
-    analyst_mode = request.user.role == AppUser.UserRole.ANALISTA_TH
+    # Permitir navegación libre a Analistas y Supervisores
+    unrestricted_mode = request.user.role in [
+        AppUser.UserRole.ANALISTA_TH,
+        AppUser.UserRole.SUPERVISOR,
+    ]
 
     for module in modules:
         contents_list = list(module.contents.all())
@@ -174,7 +180,7 @@ def course_detail_accessible(request, pk):
             cid in completed_ids for cid in module_content_ids
         )
 
-        is_unlocked = analyst_mode or prev_completed
+        is_unlocked = unrestricted_mode or prev_completed
         if is_unlocked:
             unlocked_ids.add(module.id)
         prev_completed = prev_completed and module_completed
@@ -192,7 +198,9 @@ def course_detail_accessible(request, pk):
 
     # selected module
     default_module_id = modules[0].id if modules else None
-    selected_module_id = int(request.GET.get("module", default_module_id)) if default_module_id else None
+    selected_module_id = (
+        int(request.GET.get("module", default_module_id)) if default_module_id else None
+    )
     selected_module = next((m for m in modules if m.id == selected_module_id), None)
 
     selected_contents = list(selected_module.contents.all()) if selected_module else []
@@ -206,7 +214,8 @@ def course_detail_accessible(request, pk):
             {
                 "content": content,
                 "completed": content.id in completed_ids,
-                "visible": content.id in visible_ids and selected_module_id in unlocked_ids,
+                "visible": content.id in visible_ids
+                and selected_module_id in unlocked_ids,
                 "progress": cp,
                 "render_questions": normalize_exam_questions(content.exam),
             }
@@ -230,14 +239,23 @@ def mark_content_complete(request, content_pk):
     content = get_object_or_404(Content, pk=content_pk)
     course = content.module.course
 
-    if content.block_type == Content.BlockType.QUIZ or content.content_type == Content.ContentType.ASSIGNMENT:
-        messages.error(request, "Este tipo de contenido se completa desde su flujo específico.")
+    if (
+        content.block_type == Content.BlockType.QUIZ
+        or content.content_type == Content.ContentType.ASSIGNMENT
+    ):
+        messages.error(
+            request, "Este tipo de contenido se completa desde su flujo específico."
+        )
         return redirect("course_detail_accessible", pk=course.id)
 
     try:
-        inscription = CourseInscription.objects.get(app_user=request.user, course=course)
+        inscription = CourseInscription.objects.get(
+            app_user=request.user, course=course
+        )
     except CourseInscription.DoesNotExist:
-        messages.error(request, "Necesitas estar inscrito en este curso para marcar progreso.")
+        messages.error(
+            request, "Necesitas estar inscrito en este curso para marcar progreso."
+        )
         return redirect("course_detail_accessible", pk=course.id)
 
     allowed_contents = get_contents_for_user_in_course(request.user, course)
@@ -253,7 +271,10 @@ def mark_content_complete(request, content_pk):
     progress.started_at = progress.started_at or timezone.now()
     progress.save(update_fields=["is_completed", "completed_at", "started_at"])
     messages.success(request, "Contenido marcado como completado.")
-    return redirect("course_detail_accessible", pk=course.id)
+
+    # Redirigir al mismo módulo donde estaba el usuario
+    base_url = reverse("course_detail_accessible", kwargs={"pk": course.id})
+    return redirect(f"{base_url}?module={content.module.id}")
 
 
 @login_required
@@ -266,7 +287,9 @@ def submit_assignment(request, content_pk):
         return HttpResponse(status=404)
 
     try:
-        inscription = CourseInscription.objects.get(app_user=request.user, course=course)
+        inscription = CourseInscription.objects.get(
+            app_user=request.user, course=course
+        )
     except CourseInscription.DoesNotExist:
         return HttpResponseForbidden()
 
@@ -277,7 +300,9 @@ def submit_assignment(request, content_pk):
     uploaded_file = request.FILES.get("file")
     if not uploaded_file:
         messages.error(request, "Debes adjuntar un archivo para enviar la tarea.")
-        return redirect(f"{request.META.get('HTTP_REFERER', request.build_absolute_uri())}")
+        return redirect(
+            f"{request.META.get('HTTP_REFERER', request.build_absolute_uri())}"
+        )
 
     progress, _created = ContentProgress.objects.get_or_create(
         content=content, course_inscription=inscription
@@ -308,7 +333,11 @@ def assignment_submissions(request, content_pk):
     return render(
         request,
         "courses/assignment_submissions.html",
-        {"content": content, "submissions": submissions, "course": content.module.course},
+        {
+            "content": content,
+            "submissions": submissions,
+            "course": content.module.course,
+        },
     )
 
 
@@ -370,7 +399,9 @@ def take_exam(request, content_pk):
 
     # Registrar progreso si hay inscripción
     try:
-        inscription = CourseInscription.objects.get(app_user=request.user, course=course)
+        inscription = CourseInscription.objects.get(
+            app_user=request.user, course=course
+        )
     except CourseInscription.DoesNotExist:
         inscription = None
 
@@ -383,7 +414,9 @@ def take_exam(request, content_pk):
         progress.results = _to_json_safe(results)
         progress.is_completed = True
         progress.completed_at = timezone.now()
-        progress.save(update_fields=["score", "results", "is_completed", "completed_at"])
+        progress.save(
+            update_fields=["score", "results", "is_completed", "completed_at"]
+        )
 
     messages.success(
         request,
@@ -401,6 +434,8 @@ def take_exam(request, content_pk):
             "total": total,
         },
     )
+
+
 def normalize_exam_questions(exam: Exam):
     """Normaliza preguntas de un examen a un formato uniforme."""
     if not exam or not exam.questions:
@@ -469,7 +504,9 @@ def evaluate_exam_submission(questions, submitted_answers):
         # Convertir la selección del usuario a set solo para comparar,
         # pero no guardar sets en los resultados (JSONField).
         selected = set(submitted_answers.get(qid, []))
-        correct_ids = {opt["id"] for opt in q.get("options", []) if opt.get("is_correct")}
+        correct_ids = {
+            opt["id"] for opt in q.get("options", []) if opt.get("is_correct")
+        }
 
         is_correct = selected == correct_ids and (correct_ids or not selected)
         if is_correct:

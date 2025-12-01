@@ -17,104 +17,98 @@
       <a href="?tab=usuarios" class="admin-tab {% if active_tab == 'usuarios' %}active{% endif %}">Usuarios</a>
       <a href="?tab=cursos" class="admin-tab {% if active_tab == 'cursos' %}active{% endif %}">Cursos</a>
       <a href="?tab=rutas" class="admin-tab {% if active_tab == 'rutas' %}active{% endif %}">Rutas</a>
-      <a href="?tab=estadisticas" class="admin-tab {% if active_tab == 'estadisticas' %}active{% endif %}">Estadísticas</a>
+      <a href="?tab=equipos" class="admin-tab {% if active_tab == 'equipos' %}active{% endif %}">Equipos</a>
     </div>
 
     <!-- USUARIOS -->
     {% if active_tab == 'usuarios' %}
-  
-  <div class="card-panel">
-    
-    <div class="panel-header">
-      <h2 class="panel-title">Gestión de usuarios</h2>
-      <button type="button" class="btn btn-gold" onclick="document.getElementById('createUserModal').style.display='flex'">
-        Nuevo usuario
-      </button>
-    </div>
+      <div class="card-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Gestión de usuarios</h2>
+          <button type="button" class="btn btn-gold" onclick="document.getElementById('createUserModal').style.display='flex'">Nuevo usuario</button>
+        </div>
 
-    <div class="table-responsive">
-     <table class="table-custom">
-        <thead>
-          <tr>
-            <th class="th-name">Nombre/s</th>
-            
-            <th class="th-name">Apellido/s</th>
-            
-            <th class="th-name">Username</th>
-            
-            <th class="th-email">Email</th>
-            <th class="th-role">Rol</th>
-            <th class="th-status">Estado</th>
-            <th class="th-actions text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in usuarios %}
-            <tr>
-              <td class="font-weight-medium">{{ u.first_name|default:"-" }}</td>
-              
-              <td class="font-weight-medium">{{ u.last_name|default:"-" }}</td>
-              
-              <td class="text-muted">{{ u.username }}</td>
+        <div class="table-responsive">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th class="th-name">Nombre/s</th>
 
-              <td class="text-muted">{{ u.email }}</td>
-              
-              <td>
-                <form method="post" action="{% url 'user_update_role' u.id %}">
-                  {% csrf_token %}
-                  <select name="role" class="role-select" onchange="this.form.submit()">
-                    <option value="colaborador" {% if u.role == 'colaborador' %}selected{% endif %}>
-                      Colaborador
-                    </option>
-                    <option value="supervisor" {% if u.role == 'supervisor' %}selected{% endif %}>
-                      Supervisor
-                    </option>
-                    <option value="analistaTH" {% if u.role == 'analistaTH' %}selected{% endif %}>
-                      Analista TH
-                    </option>
-                  </select>
-                </form>
-              </td>
-              
-              <td>
-                <span class="status-badge status-{{ u.status }}">
-                  {{ u.get_status_display }}
-                </span>
-              </td>
-              
-              <td class="text-right">
-                <div class="actions-group">
-                  <form method="post" action="{% url 'user_toggle_status' u.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    {% if u.status == 'active' %}
-                      <button type="submit" class="action-link text-danger" title="Desactivar usuario">
-                        Desactivar
-                      </button>
-                    {% else %}
-                      <button type="submit" class="action-link text-success" title="Activar usuario">
-                        Activar
-                      </button>
-                    {% endif %}
-                  </form>
-                  
-                  {% if u.status == 'active' %}
-                    <button type="button" class="action-link text-primary" onclick="openEnrollModal('{{ u.id }}', '{{ u.username }}')">
-                      Inscribir a curso
-                    </button>
-                  {% endif %}
-                </div>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="7" class="empty-state">No hay usuarios registrados.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-{% endif %}
+                <th class="th-name">Apellido/s</th>
+
+                <th class="th-name">Username</th>
+
+                <th class="th-email">Email</th>
+                <th class="th-role">Rol</th>
+                <th class="th-status">Estado</th>
+                <th class="th-actions text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in usuarios %}
+                <tr>
+                  <td class="font-weight-medium">{{ u.first_name|default:'-' }}</td>
+
+                  <td class="font-weight-medium">{{ u.last_name|default:'-' }}</td>
+
+                  <td class="text-muted">{{ u.username }}</td>
+
+                  <td class="text-muted">{{ u.email }}</td>
+
+                  <td>
+                    <form method="post" action="{% url 'user_update_role' u.id %}">
+                      {% csrf_token %}
+                      <select name="role" class="role-select" onchange="this.form.submit()">
+                        {% if u.role == 'colaborador' %}
+                          <option value="colaborador" selected>Colaborador</option>
+                        {% else %}
+                          <option value="colaborador">Colaborador</option>
+                        {% endif %}
+
+                        {% if u.role == 'supervisor' %}
+                          <option value="supervisor" selected>Supervisor</option>
+                        {% else %}
+                          <option value="supervisor">Supervisor</option>
+                        {% endif %}
+
+                        {% if u.role == 'analistaTH' %}
+                          <option value="analistaTH" selected>Analista TH</option>
+                        {% else %}
+                          <option value="analistaTH">Analista TH</option>
+                        {% endif %}
+                      </select>
+                    </form>
+                  </td>
+
+                  <td>
+                    <span class="status-badge status-{{ u.status }}">{{ u.get_status_display }}</span>
+                  </td>
+
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <form method="post" action="{% url 'user_toggle_status' u.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        {% if u.status == 'active' %}
+                          <button type="submit" class="action-link text-danger" title="Desactivar usuario">Desactivar</button>
+                        {% else %}
+                          <button type="submit" class="action-link text-success" title="Activar usuario">Activar</button>
+                        {% endif %}
+                      </form>
+
+                      <button type="button" class="action-link text-primary" onclick="openEnrollModal('{{ u.id }}', '{{ u.username }}')">Inscribir a curso</button>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="empty-state">No hay usuarios registrados.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
 
     <!-- CURSOS -->
     {% if active_tab == 'cursos' %}
@@ -191,20 +185,61 @@
       {% endif %}
     {% endif %}
 
-    <!-- ESTADÍSTICAS -->
-    {% if active_tab == 'estadisticas' %}
-      <div class="section-header">
-        <h2>Estadísticas y KPIs</h2>
-      </div>
-      <div>
-        <div class="empty-state">Gráficos y estadísticas aquí</div>
+    <!-- EQUIPOS -->
+    {% if active_tab == 'equipos' %}
+      <div class="card-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Gestión de Equipos</h2>
+          <button type="button" class="btn btn-gold" onclick="openCreateTeamModal()">Nuevo Equipo</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th class="th-name">Nombre</th>
+                <th class="th-name">Supervisor</th>
+                <th class="th-status">Miembros</th>
+                <th class="th-actions text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for team in teams %}
+                <tr>
+                  <td class="font-weight-medium">{{ team.name }}</td>
+                  <td>
+                    {% if team.supervisor %}
+                      {{ team.supervisor.first_name }} {{ team.supervisor.last_name }}
+                    {% else %}
+                      <span class="text-muted">Sin asignar</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ team.members.count }}</td>
+                  <td class="text-right">
+                    <div class="actions-group">
+                      <button class="action-link text-primary" onclick="openManageMembersModal('{{ team.id }}', '{{ team.name }}')">Miembros</button>
+                      <button class="action-link text-primary" onclick="openEditTeamModal('{{ team.id }}', '{{ team.name }}', '{{ team.description }}', '{{ team.supervisor.id }}')">Editar</button>
+                      <form method="post" action="{% url 'team_delete' team.id %}" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este equipo?');">
+                        {% csrf_token %}
+                        <button type="submit" class="action-link text-danger">Eliminar</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center" style="padding: 2rem; color: #6b7280;">No hay equipos creados.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     {% endif %}
   </div>
   <!-- MODAL PARA INSCRIBIR A CURSO -->
   <div id="enrollModal" class="modal-backdrop">
     <div class="modal-content">
-      
       <div class="modal-header">
         <h3 id="modalTitle">Inscribir colaborador a curso</h3>
         <span class="close-modal" onclick="closeEnrollModal()">&times;</span>
@@ -212,8 +247,8 @@
 
       <form method="post" action="{% url 'enroll_user' %}">
         {% csrf_token %}
-        
-        <input type="hidden" name="user_id" id="modalUserId">
+
+        <input type="hidden" name="user_id" id="modalUserId" />
 
         <div class="modal-body">
           <label for="courseSelect" class="label">Curso</label>
@@ -221,7 +256,7 @@
             <option value="" disabled selected>Selecciona un curso</option>
             {% for course in courses %}
               {% if course.status == 'active' %}
-                  <option value="{{ course.id }}">{{ course.name }}</option>
+                <option value="{{ course.id }}">{{ course.name }}</option>
               {% endif %}
             {% endfor %}
           </select>
@@ -232,83 +267,249 @@
           <button type="submit" class="btn btn-gold">Inscribir</button>
         </div>
       </form>
-
     </div>
   </div>
+
+  <!-- Create Team Modal -->
+  <div id="createTeamModal" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Crear Equipo</h3>
+        <span class="close-modal" onclick="closeCreateTeamModal()">&times;</span>
+      </div>
+      <form method="post" action="{% url 'team_create' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <label class="label">Nombre</label>
+          <input type="text" name="name" class="input" required />
+          <div style="margin-top: 10px;">
+            <label class="label">Descripción</label>
+            <textarea name="description" class="input"></textarea>
+          </div>
+          <div style="margin-top: 10px;">
+            <label class="label">Supervisor</label>
+            <select name="supervisor_id" class="input">
+              <option value="">-- Seleccionar --</option>
+              {% for sup in supervisors %}
+                <option value="{{ sup.id }}">{{ sup.first_name }} {{ sup.last_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeCreateTeamModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Team Modal -->
+  <div id="editTeamModal" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Editar Equipo</h3>
+        <span class="close-modal" onclick="closeEditTeamModal()">&times;</span>
+      </div>
+      <form method="post" id="editTeamForm" action="">
+        {% csrf_token %}
+        <div class="modal-body">
+          <label class="label">Nombre</label>
+          <input type="text" name="name" id="editTeamName" class="input" required />
+          <div style="margin-top: 10px;">
+            <label class="label">Descripción</label>
+            <textarea name="description" id="editTeamDescription" class="input"></textarea>
+          </div>
+          <div style="margin-top: 10px;">
+            <label class="label">Supervisor</label>
+            <select name="supervisor_id" id="editTeamSupervisor" class="input">
+              <option value="">-- Seleccionar --</option>
+              {% for sup in supervisors %}
+                <option value="{{ sup.id }}">{{ sup.first_name }} {{ sup.last_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeEditTeamModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Members Modal -->
+  <div id="manageMembersModal" class="modal-backdrop">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 id="manageMembersTitle">Miembros del Equipo</h3>
+        <span class="close-modal" onclick="closeManageMembersModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <!-- Add Member Form -->
+        <form method="post" id="addMemberForm" action="" style="margin-bottom: 20px; display: flex; gap: 10px;">
+          {% csrf_token %}
+          <select name="user_id" class="input" required style="flex: 1;">
+            <option value="">-- Añadir usuario --</option>
+            {% for u in usuarios %}
+              <option value="{{ u.id }}">{{ u.first_name }} {{ u.last_name }} ({{ u.username }})</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-gold">Añadir</button>
+        </form>
+
+        <!-- Members List -->
+        <div id="membersListContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Data for Members -->
+  {% for team in teams %}
+    <div id="team-members-{{ team.id }}" style="display:none;">
+      <table class="table-custom" style="width: 100%;">
+        {% for member in team.members.all %}
+          <tr>
+            <td>{{ member.app_user.first_name }} {{ member.app_user.last_name }}</td>
+            <td class="text-right">
+              <form method="post" action="{% url 'team_remove_member' team.id member.app_user.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="text-danger" onclick="return confirm('¿Eliminar miembro?')">&times;</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="2" class="text-muted">Sin miembros</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% endfor %}
 
   <script>
     // Función para abrir el modal y setear los datos
     function openEnrollModal(userId, username) {
-      const modal = document.getElementById('enrollModal');
-      const inputId = document.getElementById('modalUserId');
-      const title = document.getElementById('modalTitle');
-      
+      const modal = document.getElementById('enrollModal')
+      const inputId = document.getElementById('modalUserId')
+      const title = document.getElementById('modalTitle')
+    
       // Asignamos el ID del usuario al input oculto
-      inputId.value = userId;
-      
+      inputId.value = userId
+    
       // (Opcional) Ponemos el nombre en el título para que se vea pro
-      title.innerText = `Inscribir a ${username} en un curso`;
-      
+      title.innerText = `Inscribir a ${username} en un curso`
+    
       // Mostramos el modal
-      modal.style.display = 'flex';
+      modal.style.display = 'flex'
     }
-
+    
     // Función para cerrar el modal
     function closeEnrollModal() {
-      const modal = document.getElementById('enrollModal');
-      modal.style.display = 'none';
+      const modal = document.getElementById('enrollModal')
+      modal.style.display = 'none'
     }
-
+    
     // Cerrar si se hace clic fuera de la cajita blanca
-    window.onclick = function(event) {
-      const modal = document.getElementById('enrollModal');
+    window.onclick = function (event) {
+      const modal = document.getElementById('enrollModal')
       if (event.target == modal) {
-        modal.style.display = "none";
+        modal.style.display = 'none'
       }
+    }
+    
+    function openCreateTeamModal() {
+      document.getElementById('createTeamModal').style.display = 'flex'
+    }
+    function closeCreateTeamModal() {
+      document.getElementById('createTeamModal').style.display = 'none'
+    }
+    
+    function openEditTeamModal(id, name, description, supervisorId) {
+      document.getElementById('editTeamModal').style.display = 'flex'
+      document.getElementById('editTeamName').value = name
+      document.getElementById('editTeamDescription').value = description
+      document.getElementById('editTeamSupervisor').value = supervisorId
+      // Construct URL dynamically
+      // Assuming URL pattern is /administration/teams/<pk>/update/
+      // We can use a dummy URL and replace it
+      var url = "{% url 'team_update' 999999 %}".replace('999999', id)
+      document.getElementById('editTeamForm').action = url
+    }
+    function closeEditTeamModal() {
+      document.getElementById('editTeamModal').style.display = 'none'
+    }
+    
+    function openManageMembersModal(teamId, teamName) {
+      document.getElementById('manageMembersModal').style.display = 'flex'
+      document.getElementById('manageMembersTitle').innerText = 'Miembros de ' + teamName
+    
+      var url = "{% url 'team_add_member' 999999 %}".replace('999999', teamId)
+      document.getElementById('addMemberForm').action = url
+    
+      // Copy members list
+      var content = document.getElementById('team-members-' + teamId).innerHTML
+      document.getElementById('membersListContainer').innerHTML = content
+    }
+    function closeManageMembersModal() {
+      document.getElementById('manageMembersModal').style.display = 'none'
     }
   </script>
 
   <!-- ================= MODAL DE MENSAJES (FEEDBACK) ================= -->
   {% if messages %}
-  <div id="feedbackModal" class="modal-backdrop" style="display: flex;">
-    <div class="modal-content feedback-content">
-      
-      {% for message in messages %}
-        <!-- Icono Dinámico -->
-        <div class="feedback-icon {% if message.tags == 'success' %}icon-success{% else %}icon-warning{% endif %}">
-          {% if message.tags == 'success' %}
-            <!-- Chulito Verde (SVG) -->
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          {% else %}
-            <!-- Signo de Exclamación (SVG) -->
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-          {% endif %}
-        </div>
+    <div id="feedbackModal" class="modal-backdrop" style="display: flex;">
+      <div class="modal-content feedback-content">
+        {% for message in messages %}
+          <!-- Icono Dinámico -->
+          <div class="feedback-icon {% if message.tags == 'success' %}
+              
+              
+              icon-success
 
-        <!-- Título y Texto -->
-        <h3 class="feedback-title">
-          {% if message.tags == 'success' %}¡Excelente!{% else %}Atención{% endif %}
-        </h3>
-        <p class="feedback-text">{{ message }}</p>
 
-        <!-- Botón Aceptar -->
-        <button type="button" class="btn btn-gold btn-wide" onclick="document.getElementById('feedbackModal').style.display='none'">
-          Aceptar
-        </button>
-      {% endfor %}
+            {% else %}
+              
+              
+              icon-warning
 
+
+            {% endif %}">
+            {% if message.tags == 'success' %}
+              <!-- Chulito Verde (SVG) -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            {% else %}
+              <!-- Signo de Exclamación (SVG) -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            {% endif %}
+          </div>
+
+          <!-- Título y Texto -->
+          <h3 class="feedback-title">
+            {% if message.tags == 'success' %}
+              ¡Excelente!
+            {% else %}
+              Atención
+            {% endif %}
+          </h3>
+          <p class="feedback-text">{{ message }}</p>
+
+          <!-- Botón Aceptar -->
+          <button type="button" class="btn btn-gold btn-wide" onclick="document.getElementById('feedbackModal').style.display='none'">Aceptar</button>
+        {% endfor %}
+      </div>
     </div>
-  </div>
   {% endif %}
   <!-- Crear Usuario -->
   <div id="createUserModal" class="modal-backdrop">
     <div class="modal-content">
-      
       <div class="modal-header">
         <h3>Crear usuario</h3>
         <span class="close-modal" onclick="document.getElementById('createUserModal').style.display='none'">&times;</span>
@@ -316,48 +517,46 @@
 
       <form method="post" action="{% url 'admin_create_user' %}">
         {% csrf_token %}
-        
+
         <div class="modal-body">
-          
           <label class="label">Username</label>
-          <input type="text" name="username" class="input" required placeholder="ej. juanperez">
-          
+          <input type="text" name="username" class="input" required placeholder="ej. juanperez" />
+
           <div style="display: flex; gap: 10px; margin-top: 10px;">
-              <div style="flex: 1;">
-                  <label class="label">Nombre/s</label>
-                  <input type="text" name="first_name" class="input" required placeholder="Juan">
-              </div>
-              <div style="flex: 1;">
-                  <label class="label">Apellido/s</label>
-                  <input type="text" name="last_name" class="input" required placeholder="Pérez">
-              </div>
+            <div style="flex: 1;">
+              <label class="label">Nombre/s</label>
+              <input type="text" name="first_name" class="input" required placeholder="Juan" />
+            </div>
+            <div style="flex: 1;">
+              <label class="label">Apellido/s</label>
+              <input type="text" name="last_name" class="input" required placeholder="Pérez" />
+            </div>
           </div>
 
           <div style="margin-top: 10px;">
-              <label class="label">Correo electrónico</label>
-              <input type="email" name="email" class="input" required placeholder="correo@empresa.com">
+            <label class="label">Correo electrónico</label>
+            <input type="email" name="email" class="input" required placeholder="correo@empresa.com" />
           </div>
 
           <div style="margin-top: 10px;">
-              <label class="label">Rol</label>
-              <select name="role" class="input">
-                  <option value="colaborador">Colaborador</option>
-                  <option value="analistaTH">Analista TH</option>
-                  <option value="supervisor">Supervisor</option>
-              </select>
+            <label class="label">Rol</label>
+            <select name="role" class="input">
+              <option value="colaborador">Colaborador</option>
+              <option value="analistaTH">Analista TH</option>
+              <option value="supervisor">Supervisor</option>
+            </select>
           </div>
 
           <div style="display: flex; gap: 10px; margin-top: 10px;">
-              <div style="flex: 1;">
-                  <label class="label">Contraseña</label>
-                  <input type="password" name="password" class="input" required placeholder="********">
-              </div>
-              <div style="flex: 1;">
-                  <label class="label">Confirmar</label>
-                  <input type="password" name="confirm_password" class="input" required placeholder="********">
-              </div>
+            <div style="flex: 1;">
+              <label class="label">Contraseña</label>
+              <input type="password" name="password" class="input" required placeholder="********" />
+            </div>
+            <div style="flex: 1;">
+              <label class="label">Confirmar</label>
+              <input type="password" name="confirm_password" class="input" required placeholder="********" />
+            </div>
           </div>
-
         </div>
 
         <div class="modal-footer">
@@ -365,7 +564,6 @@
           <button type="submit" class="btn btn-gold">Crear</button>
         </div>
       </form>
-
     </div>
   </div>
 {% endblock %}
