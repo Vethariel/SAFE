@@ -15,6 +15,7 @@ from enrollments.services import (
     get_contents_for_user_in_course,
     get_course_progress,
 )
+from .services import get_ordered_contents, get_ordered_modules
 from .forms import QuestionUploadForm
 from .models import Content, Course, Exam, Material, Module
 
@@ -140,16 +141,7 @@ def course_detail_accessible(request, pk):
     - Content status is tracked via ContentProgress.
     """
     course = get_object_or_404(Course, pk=pk)
-    modules = list(
-        Module.objects.filter(course=course)
-        .prefetch_related(
-            "contents",
-            "contents__material",
-            "contents__exam",
-            "contents__assignment",
-        )
-        .order_by("id")
-    )
+    modules = get_ordered_modules(course)
 
     progress_info = get_course_progress(request.user, course)
     inscription = progress_info["inscription"]
@@ -203,7 +195,9 @@ def course_detail_accessible(request, pk):
     )
     selected_module = next((m for m in modules if m.id == selected_module_id), None)
 
-    selected_contents = list(selected_module.contents.all()) if selected_module else []
+    selected_contents = (
+        get_ordered_contents(selected_module) if selected_module else []
+    )
     visible_contents = get_contents_for_user_in_course(request.user, course)
     visible_ids = {c.id for c in visible_contents}
 

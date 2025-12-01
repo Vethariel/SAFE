@@ -13,9 +13,19 @@ urlpatterns = [
         name="module_create",
     ),
     path(
+        "modules/<int:pk>/move/<str:direction>/",
+        views.module_move,
+        name="module_move",
+    ),
+    path(
         "modules/<int:module_pk>/content/create/",
         views.content_create,
         name="content_create",
+    ),
+    path(
+        "modules/content/<int:content_pk>/move/<str:direction>/",
+        views.content_move,
+        name="content_move",
     ),
     path(
         "modules/content/<int:content_pk>/update/",

@@ -5,6 +5,16 @@ from django.http import HttpResponse
 from django.urls import reverse
 from django.db import transaction
 from courses.models import Course, Module, Content, Exam
+from courses.services import (
+    append_content_to_module,
+    append_module_to_course,
+    get_ordered_contents,
+    get_ordered_modules,
+    move_content,
+    move_module,
+    rebuild_content_chain,
+    rebuild_module_chain,
+)
 from administration.services import change_role
 from learning_paths.models import LearningPath, CourseInPath
 from accounts.models import AppUser
@@ -87,36 +97,38 @@ def course_create(request):
 @login_required
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
-    modules = course.modules.all().order_by("id")  # pyright: ignore[reportAttributeAccessIssue]
-    exam_module = modules.filter(name__iexact="Examen").first()
+    modules = get_ordered_modules(course)
+    exam_module = next((m for m in modules if m.name.lower() == "examen"), None)
 
     selected_module = None
-    module_contents = None
+    module_contents = []
     selected_content = None
     content_edit_form = None
     material_edit_form = None
     module_id = request.GET.get("module")
     if module_id:
-        try:
-            selected_module = modules.get(pk=module_id)
-        except Module.DoesNotExist:
-            selected_module = None
-        else:
-            module_contents = selected_module.contents.select_related(
-                "material", "exam"
-            ).order_by("order", "created_at")
-            content_id = request.GET.get("content")
-            if module_contents.exists() and content_id:
-                selected_content = module_contents.filter(pk=content_id).first()
+        selected_module = next(
+            (module for module in modules if str(module.pk) == str(module_id)), None
+        )
+    if not selected_module and modules:
+        selected_module = modules[0]
 
-            if selected_content:
-                content_edit_form = ContentForm(instance=selected_content)
-                if selected_content.material:
-                    material_edit_form = MaterialForm(
-                        instance=selected_content.material
-                    )
-                else:
-                    material_edit_form = MaterialForm()
+    if selected_module:
+        module_contents = get_ordered_contents(selected_module)
+        content_id = request.GET.get("content")
+        if module_contents and content_id:
+            selected_content = next(
+                (c for c in module_contents if str(c.pk) == str(content_id)), None
+            )
+
+        if selected_content:
+            content_edit_form = ContentForm(instance=selected_content)
+            if selected_content.material:
+                material_edit_form = MaterialForm(
+                    instance=selected_content.material
+                )
+            else:
+                material_edit_form = MaterialForm()
 
     # forms for inline use
     module_form = ModuleForm()
@@ -221,8 +233,7 @@ def module_create(request, course_pk):
         form = ModuleForm(request.POST)
         if form.is_valid():
             module = form.save(commit=False)
-            module.course = course
-            module.save()
+            append_module_to_course(course, module)
             messages.success(request, f"Módulo '{module.name}' agregado")
             # redirigir y seleccionar el módulo creado
             return redirect(
@@ -243,12 +254,33 @@ def module_create(request, course_pk):
 @require_POST
 def module_delete(request, pk):
     module = get_object_or_404(Module, pk=pk)
-    course_pk = module.course.pk
+    course = module.course
 
     with transaction.atomic():
         module.delete()
+        rebuild_module_chain(course)
     messages.success(request, "Módulo eliminado")
-    return redirect("course_detail", pk=course_pk)
+    return redirect("course_detail", pk=course.pk)
+
+
+@login_required
+@require_POST
+def module_move(request, pk, direction):
+    module = get_object_or_404(Module, pk=pk)
+    moved = move_module(module, direction)
+    if moved:
+        messages.success(request, "Orden de módulos actualizado.")
+    else:
+        messages.warning(request, "No se pudo mover el módulo.")
+
+    next_url = request.POST.get("next")
+    if next_url:
+        return redirect(next_url)
+
+    return redirect(
+        reverse("course_detail", kwargs={"pk": module.course.pk})
+        + f"?module={module.pk}"
+    )
 
 
 # vista de contenido
@@ -345,7 +377,7 @@ def content_create(request, module_pk):
                     )
                 return redirect(redirect_url)
 
-        content.save()
+        append_content_to_module(module, content)
         messages.success(request, "Contenido agregado al módulo.")
         return redirect(redirect_url)
 
@@ -486,17 +518,39 @@ def content_update(request, content_pk):
 
 @login_required
 @require_POST
+def content_move(request, content_pk, direction):
+    content = get_object_or_404(Content, pk=content_pk)
+    moved = move_content(content, direction)
+
+    if moved:
+        messages.success(request, "Orden de contenidos actualizado.")
+    else:
+        messages.warning(request, "No se pudo mover el contenido.")
+
+    next_url = request.POST.get("next")
+    if next_url:
+        return redirect(next_url)
+
+    return redirect(
+        reverse("course_detail", kwargs={"pk": content.module.course.pk})
+        + f"?module={content.module.pk}&content={content.pk}#content-block-{content.pk}"
+    )
+
+
+@login_required
+@require_POST
 def content_delete(request, content_pk):
     content = get_object_or_404(Content, pk=content_pk)
     module = content.module
-    course_pk = module.course.pk
+    course = module.course
 
     with transaction.atomic():
         content.delete()
+        rebuild_content_chain(module)
 
     messages.success(request, "Contenido eliminado.")
     return redirect(
-        reverse("course_detail", kwargs={"pk": course_pk}) + f"?module={module.pk}"
+        reverse("course_detail", kwargs={"pk": course.pk}) + f"?module={module.pk}"
     )
 
 

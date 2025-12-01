@@ -44,7 +44,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">Módulos</span>
-            <span class="info-value">{{ modules.count }}</span>
+            <span class="info-value">{{ modules|length }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">Creado por</span>
@@ -77,10 +77,28 @@
                       <p class="module-description">{{ module.contents.count }} contenido(s)</p>
                     </div>
                   </a>
-                  <form method="post" action="{% url 'module_delete' module.pk %}" class="module-delete-form" onsubmit="return confirm('¿Eliminar {{ module.name }}?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-danger module-delete-btn" aria-label="Eliminar módulo {{ module.name }}">X</button>
-                  </form>
+                  <div class="module-actions">
+                    <div class="module-order-controls">
+                      {% if not forloop.first %}
+                        <form method="post" action="{% url 'module_move' module.pk 'up' %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ module.pk }}">
+                          <button type="submit" class="order-btn" title="Mover arriba" aria-label="Mover módulo hacia arriba">&uarr;</button>
+                        </form>
+                      {% endif %}
+                      {% if not forloop.last %}
+                        <form method="post" action="{% url 'module_move' module.pk 'down' %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ module.pk }}">
+                          <button type="submit" class="order-btn" title="Mover abajo" aria-label="Mover módulo hacia abajo">&darr;</button>
+                        </form>
+                      {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'module_delete' module.pk %}" class="module-delete-form" onsubmit="return confirm('¿Eliminar {{ module.name }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-danger module-delete-btn" aria-label="Eliminar módulo {{ module.name }}">X</button>
+                    </form>
+                  </div>
                 </div>
               </div>
             {% empty %}
@@ -189,15 +207,33 @@
                                   <p class="content-empty">Crea un cuestionario para este bloque.</p>
                                 {% endif %}
                               {% endif %}
-                            </div>
+                        </div>
 
-                            <div class="content-block__actions">
-                              {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
-                                <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}#content-block-{{ content.pk }}" class="btn-tertiary btn-small">Cerrar</a>
-                              {% else %}
-                                <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}" class="btn-secondary btn-small">Editar</a>
-                              {% endif %}
-                            </div>
+                        <div class="content-block__actions">
+                          <div class="content-order-controls">
+                            {% if not forloop.first %}
+                              <form method="post" action="{% url 'content_move' content.pk 'up' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}">
+                                <button type="submit" class="order-btn" title="Mover arriba" aria-label="Mover contenido hacia arriba">&uarr;</button>
+                              </form>
+                            {% endif %}
+                            {% if not forloop.last %}
+                              <form method="post" action="{% url 'content_move' content.pk 'down' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}">
+                                <button type="submit" class="order-btn" title="Mover abajo" aria-label="Mover contenido hacia abajo">&darr;</button>
+                              </form>
+                            {% endif %}
+                          </div>
+                          <div class="content-block__actions-edit">
+                            {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
+                              <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}#content-block-{{ content.pk }}" class="btn-tertiary btn-small">Cerrar</a>
+                            {% else %}
+                              <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}" class="btn-secondary btn-small">Editar</a>
+                            {% endif %}
+                          </div>
+                        </div>
 
                             {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
                                <form id="delete-form-{{ selected_content.pk }}" method="post" action="{% url 'content_delete' selected_content.pk %}" style="display: none;">{% csrf_token %}</form>
