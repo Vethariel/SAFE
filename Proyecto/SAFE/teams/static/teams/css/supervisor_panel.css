@@ -1,0 +1,702 @@
+/* --- 1. Contenedor y Títulos Generales --- */
+.admin-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    background: #f7f7f8;
+    min-height: 100vh;
+    /* Asegura que cubra la pantalla */
+}
+
+.admin-title {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #111827;
+}
+
+/* --- 2. Tabs de Navegación --- */
+.admin-tabs {
+    display: flex;
+    gap: .5rem;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 2rem;
+}
+
+.admin-tab {
+    padding: .75rem 1.5rem;
+    color: #6b7280;
+    text-decoration: none;
+    transition: .2s;
+    border-radius: .5rem .5rem 0 0;
+    font-weight: 500;
+}
+
+.admin-tab:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.admin-tab.active {
+    background: #1f2937;
+    /* Color oscuro */
+    color: #fff;
+}
+
+/* --- 3. Botones (Fusionados) --- */
+/* Unificamos btn-nuevo, btn-primary y el nuevo btn-gold */
+.btn-nuevo,
+.btn-primary,
+.btn-gold {
+    background: #d4af37;
+    /* Dorado SAFE */
+    color: #fff;
+    padding: .625rem 1.25rem;
+    border-radius: .5rem;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    display: inline-block;
+    transition: 0.2s;
+}
+
+.btn-nuevo:hover,
+.btn-primary:hover,
+.btn-gold:hover {
+    background: #b8962c;
+    /* Dorado más oscuro */
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #111827;
+    padding: .5rem 1rem;
+    border-radius: .5rem;
+    text-decoration: none;
+    font-size: .875rem;
+    transition: .2s;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.btn-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: .5rem 1rem;
+    border-radius: .5rem;
+    text-decoration: none;
+    font-size: .875rem;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-danger:hover {
+    background: #fecaca;
+}
+
+/* --- 4. Encabezados de Sección (Legacy - Para Cursos/Rutas) --- */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    margin-bottom: 1.25rem;
+}
+
+.section-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* =========================================
+   NUEVO: Estilos Específicos para Usuarios (Mockup)
+   ========================================= */
+
+/* Panel Blanco tipo Tarjeta */
+.card-panel {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    border: 1px solid #e5e7eb;
+    margin-top: 20px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+/* Tabla Personalizada (Limpia) */
+.table-custom {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-custom th {
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.table-custom td {
+    padding: 16px 0;
+    vertical-align: middle;
+    border-bottom: 1px solid #f9fafb;
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Badges de Rol (Simulación Dropdown) */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #e5e7eb;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 13px;
+    min-width: 130px;
+    background-color: #fff;
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    color: #9ca3af;
+    margin-left: 8px;
+}
+
+.role-select {
+    appearance: none;
+    /* Quita el estilo por defecto del navegador */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px 32px 6px 12px;
+    /* Espacio a la derecha para la flecha */
+    font-size: 13px;
+    color: #374151;
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+    /* O un ancho fijo como min-width: 140px */
+    min-width: 130px;
+
+    /* Flecha personalizada usando SVG codificado (gris suave) */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.role-select:hover {
+    border-color: #d1d5db;
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: #d4af37;
+    /* Color dorado al hacer clic */
+    box-shadow: 0 0 0 1px #d4af37;
+}
+
+/* Badges de Estado (Pill shape) */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-active,
+.status-activo {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-inactive,
+.status-inactivo {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-pending,
+.status-pendiente {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-completed {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-in_progress {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-enrolled {
+    background-color: #eff6ff;
+    color: #1e40af;
+}
+
+.status-failed {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-withdrawn {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+/* Tipografía y Utilidades */
+.font-weight-medium {
+    font-weight: 500;
+    color: #111827;
+}
+
+.text-muted {
+    color: #6b7280;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-danger {
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.text-success {
+    color: #10b981;
+    /* Verde esmeralda bonito */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-weight: 500;
+}
+
+.text-success:hover {
+    color: #059669;
+    /* Verde más oscuro al pasar el mouse */
+    text-decoration: underline;
+}
+
+.text-danger:hover {
+    color: #b91c1c;
+    text-decoration: underline;
+}
+
+.text-primary {
+    color: #d4af37;
+    background: none;
+    /* ¡Esto quita el fondo! */
+    border: none;
+    /* ¡Esto quita el borde cuadrado! */
+    padding: 0;
+    cursor: pointer;
+    font-weight: 500;
+    /* Para que tenga el mismo grosor que "Desactivar" */
+    text-decoration: none;
+    font-size: 14px;
+    /* Asegura el mismo tamaño */
+    font-family: inherit;
+}
+
+/* Dorado un poco más oscuro al pasar el mouse + subrayado */
+.text-primary:hover {
+    color: #b8962c;
+    text-decoration: underline;
+}
+
+.actions-group {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+
+/* --- 5. Estilos para Cursos (Grid) --- */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.course-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+
+.course-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.course-header {
+    height: 8rem;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.25rem;
+}
+
+.course-body {
+    padding: 1rem;
+}
+
+.course-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.course-title-row h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.course-description {
+    font-size: .9rem;
+    color: #6b7280;
+    margin: .25rem 0 .75rem;
+}
+
+.course-meta {
+    display: flex;
+    gap: .75rem;
+    font-size: .8rem;
+    color: #9ca3af;
+    margin-bottom: .75rem;
+}
+
+.course-actions {
+    display: flex;
+    gap: .5rem;
+}
+
+.course-actions a {
+    flex: 1;
+    text-align: center;
+}
+
+/* Badges Genéricos (para Cursos) */
+.badge {
+    padding: .25rem .75rem;
+    font-size: .75rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.badge-active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-draft {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.badge-archived {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Estado vacío */
+.empty-state {
+    background: #fff;
+    padding: 3rem 2rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    text-align: center;
+    color: #6b7280;
+}
+
+/* --- 6. Tabla Antigua (Legacy) --- */
+/* Mantenemos esto por si alguna otra pestaña lo usa, 
+   pero Usuarios usará .table-custom */
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    overflow: hidden;
+    background: #fff;
+}
+
+.table thead th {
+    background: #f9fafb;
+    font-weight: 600;
+    font-size: .9rem;
+    color: #374151;
+    padding: .75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table tbody td {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: .92rem;
+    color: #111827;
+}
+
+.table tbody tr:hover {
+    background: #fafafa;
+}
+
+.table .empty {
+    text-align: center;
+    color: #6b7280;
+}
+
+/* --- Responsive --- */
+@media (max-width:768px) {
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    /* Responsive simple para la tabla */
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+/* --- MODAL STYLES --- */
+
+/* El fondo oscuro que cubre toda la pantalla */
+.modal-backdrop {
+    display: none;
+    /* Oculto por defecto */
+    position: fixed;
+    z-index: 1000;
+    /* Por encima de todo */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Negro semitransparente */
+    justify-content: center;
+    align-items: center;
+}
+
+/* La caja blanca del modal */
+.modal-content {
+    background-color: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    /* Ancho máximo como en el mockup */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.close-modal {
+    color: #9ca3af;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close-modal:hover {
+    color: #374151;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+    /* Importante para padding */
+}
+
+.input:focus {
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background-color: #f9fafb;
+    border-radius: 0 0 12px 12px;
+}
+
+/* --- FEEDBACK MODAL STYLES --- */
+
+/* Ajuste específico para el contenido del feedback (más pequeño y centrado) */
+.feedback-content {
+    max-width: 400px;
+    text-align: center;
+    padding: 32px 24px;
+    border-radius: 16px;
+}
+
+.feedback-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.feedback-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Estilo para Éxito (Verde) */
+.icon-success {
+    background-color: #d1fae5;
+    /* Fondo verde suave */
+    color: #059669;
+    /* Verde intenso */
+}
+
+/* Estilo para Advertencia (Amarillo/Naranja) */
+.icon-warning {
+    background-color: #fef3c7;
+    /* Fondo amarillo suave */
+    color: #d97706;
+    /* Naranja intenso */
+}
+
+.feedback-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+}
+
+.feedback-text {
+    font-size: 15px;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.btn-wide {
+    width: 100%;
+    justify-content: center;
+    font-size: 15px;
+    padding: 12px;
+}
+
+/* Animación de entrada para el ícono */
+@keyframes popIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    80% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}

@@ -49,11 +49,21 @@ urlpatterns = [
         views.path_move_down,
         name="path_move_down",
     ),
-    path('delete/<int:pk>/', views.user_delete, name='user_del'),
+    path("delete/<int:pk>/", views.user_delete, name="user_del"),
     path(
         "course/<int:course_pk>/exam/create/",
         views.create_exam_for_course,
         name="create_exam_for_course",
     ),
     path("users/<int:user_id>/role/", views.user_change_role, name="user_change_role"),
+    # Teams
+    path("teams/create/", views.team_create, name="team_create"),
+    path("teams/<int:pk>/update/", views.team_update, name="team_update"),
+    path("teams/<int:pk>/delete/", views.team_delete, name="team_delete"),
+    path("teams/<int:pk>/add_member/", views.team_add_member, name="team_add_member"),
+    path(
+        "teams/<int:pk>/remove_member/<int:user_id>/",
+        views.team_remove_member,
+        name="team_remove_member",
+    ),
 ]
