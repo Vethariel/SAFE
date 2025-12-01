@@ -14,12 +14,11 @@
     {% endif %}
 
     <a href="{% url 'profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Perfil</a>
-  
-     {% if request.user.is_authenticated %}
-    <div class="nav-right">
-      <a href="{% url 'logout' %}" class="logout-btn">Cerrar sesión</a>
-    </div>
+
+    {% if request and request.user.is_authenticated %}
+      <div class="nav-right">
+        <a href="{% url 'logout' %}" class="logout-btn">Cerrar sesión</a>
+      </div>
     {% endif %}
-  
   </nav>
 </header>
