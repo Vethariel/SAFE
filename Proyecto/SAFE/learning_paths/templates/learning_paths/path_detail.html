@@ -1,61 +1,26 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Mi aprendizaje - SAFE{% endblock %}
+{% block title %}{{ path.name }} - Ruta de aprendizaje{% endblock %}
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'courses/css/catalog.css' %}" />
-  <style>
-    .section-title { margin: 16px 0 12px; }
-    .muted-note { color: var(--safe-ink2); margin-top: 6px; }
-  </style>
 {% endblock %}
 
 {% block content %}
   <div class="container">
-    <h1 class="section-title">Rutas de aprendizaje</h1>
-    {% if paths %}
-      <div class="courses-grid">
-        {% for path in paths %}
-          <div class="course-card">
-            <div class="course-card-header">
-              {% if path.header_img %}
-                <img src="{{ path.header_img.url }}" alt="{{ path.name }}">
-              {% else %}
-                <span class="placeholder-icon">SAFE</span>
-              {% endif %}
-              <div class="card-badges">
-                <span class="status-badge status-{{ path.status }}">{{ path.get_status_display }}</span>
-                <span class="pill audience-pill">Ruta</span>
-              </div>
-            </div>
-            <div class="course-card-body">
-              <div class="card-header-row">
-                <div>
-                  <p class="eyebrow">Ruta</p>
-                  <h3 class="card-title">{{ path.name }}</h3>
-                </div>
-                <span class="pill muted-pill">{{ path.courses.count }} curso(s)</span>
-              </div>
-              <p class="card-description">{{ path.description|default:"Sin descripción" }}</p>
-              <div class="card-meta">
-                <span class="meta-pill">{{ path.estimated_duration|default:"0" }}h estimadas</span>
-                <span class="meta-pill">{{ path.courses.count }} curso(s)</span>
-              </div>
-              <div class="card-actions">
-                <a class="btn-primary" href="{% url 'learning_path_detail' path.id %}">Ver ruta</a>
-              </div>
-            </div>
-          </div>
-        {% endfor %}
+    <div class="page-header">
+      <div class="page-header-content">
+        <p class="eyebrow">Ruta de aprendizaje</p>
+        <h1>{{ path.name }}</h1>
+        <p class="page-subtitle">{{ path.description|default:"Sin descripción" }}</p>
+        <p class="page-subtitle">{{ path.estimated_duration|default:"0" }}h estimadas · {{ course_cards|length }} curso(s)</p>
       </div>
-    {% else %}
-      <div class="empty-state">
-        <p class="empty-text">No hay rutas de aprendizaje configuradas.</p>
+      <div class="card-badges" style="margin-top:6px;">
+        <span class="status-badge status-{{ path.status }}">{{ path.get_status_display }}</span>
       </div>
-    {% endif %}
+    </div>
 
-    <h1 class="section-title" style="margin-top:28px;">Mis cursos</h1>
     {% if course_cards %}
       <div class="courses-grid">
         {% for card in course_cards %}
@@ -121,7 +86,7 @@
       </div>
     {% else %}
       <div class="empty-state">
-        <p class="empty-text">Aún no tienes cursos visibles.</p>
+        <p class="empty-text">Esta ruta aún no tiene cursos asignados.</p>
       </div>
     {% endif %}
   </div>
