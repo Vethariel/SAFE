@@ -97,9 +97,11 @@
                     {% endif %}
                   </form>
                   
-                  <button type="button" class="action-link text-primary" onclick="openEnrollModal('{{ u.id }}', '{{ u.username }}')">
-                    Inscribir a curso
-                  </button>
+                  {% if u.status == 'active' %}
+                    <button type="button" class="action-link text-primary" onclick="openEnrollModal('{{ u.id }}', '{{ u.username }}')">
+                      Inscribir a curso
+                    </button>
+                  {% endif %}
                 </div>
               </td>
             </tr>
