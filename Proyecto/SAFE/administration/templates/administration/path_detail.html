@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {{ learning_path.name }} - SAFE Academy
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'administration/css/course_detail.css' %}" />
+  <link rel="stylesheet" href="{% static 'administration/css/path_detail.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="container course-body">
+    <div class="breadcrumb">
+      <a href="{% url 'admin_panel' %}?tab=rutas">← Volver a Administración</a>
+    </div>
+
+    <div class="course-summary">
+      <div class="course-header">
+        <div class="course-header-content">
+          <h1>{{ learning_path.name }}</h1>
+          <span class="status-badge status-{{ learning_path.status }}">{{ learning_path.get_status_display }}</span>
+        </div>
+        <div class="course-header-actions">
+          <a href="{% url 'path_update' learning_path.pk %}" class="btn-secondary">Editar Metadatos</a>
+          <form method="post" action="{% url 'path_delete' learning_path.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger" onclick="return confirm('¿Eliminar {{ learning_path.name }}?')">Eliminar Ruta</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">Descripción</span>
+            <p>{{ learning_path.description|default:'Sin descripción' }}</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">Duración estimada</span>
+            <span class="info-value">{{ learning_path.estimated_duration|default:'--' }} horas</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Cursos</span>
+            <span class="info-value">{{ ordered_courses|length }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Creado por</span>
+            <span class="info-value">{{ learning_path.created_by.username|default:'--' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="path-layout">
+      <section class="path-sequence-column">
+        <div class="section-header">
+          <h2 class="section-title">Secuencia de Cursos</h2>
+        </div>
+
+        <div class="path-courses-list">
+          {% for cip in ordered_courses %}
+            <div class="path-course-card">
+              <div class="path-course-info">
+                <h3>{{ forloop.counter }}. {{ cip.course.name }}</h3>
+                <p>{{ cip.course.description|truncatechars:100 }}</p>
+              </div>
+              <div class="path-course-actions">
+                {% if not forloop.first %}
+                  <form method="post" action="{% url 'path_move_up' learning_path.pk cip.course.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-icon" title="Subir">↑</button>
+                  </form>
+                {% endif %}
+
+                {% if not forloop.last %}
+                  <form method="post" action="{% url 'path_move_down' learning_path.pk cip.course.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-icon" title="Bajar">↓</button>
+                  </form>
+                {% endif %}
+
+                <form method="post" action="{% url 'path_remove_course' learning_path.pk cip.course.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-danger btn-small" onclick="return confirm('¿Quitar este curso de la ruta?')">Quitar</button>
+                </form>
+              </div>
+            </div>
+          {% empty %}
+            <div class="empty-state-small">No hay cursos en esta ruta.</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="path-actions-column">
+        <div class="add-course-panel">
+          <h3>Agregar curso a la ruta</h3>
+          <form method="post" action="{% url 'path_add_course' learning_path.pk %}" class="inline-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            {% csrf_token %}
+            <select name="course_id" required style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--safe-border);">
+              <option value="">Selecciona un curso...</option>
+              {% for course in available_courses %}
+                <option value="{{ course.id }}">{{ course.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary" style="width: 100%;">Agregar al final</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}
