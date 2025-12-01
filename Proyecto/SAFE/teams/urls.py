@@ -1,4 +1,6 @@
 from django.urls import path
 from . import views
 
-urlpatterns = []
+urlpatterns = [
+    path("supervisor/", views.supervisor_panel, name="supervisor_panel"),
+]
