@@ -74,6 +74,13 @@ body {
     box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 
+.btn-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
 /* Courses Grid */
 .courses-grid {
     display: grid;

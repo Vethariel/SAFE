@@ -69,8 +69,13 @@
                 </div>
 
                 <div class="card-actions">
-                  <a class="btn-primary" href="{% url 'course_detail_accessible' course.id %}">Abrir</a>
-                  <a class="btn-secondary" href="{% url 'course_detail_accessible' course.id %}">Mas detalles</a>
+                  {% if card.can_open %}
+                    <a class="btn-primary" href="{% url 'course_detail_accessible' course.id %}">Abrir</a>
+                    <a class="btn-secondary" href="{% url 'course_detail_accessible' course.id %}">Mas detalles</a>
+                  {% else %}
+                    <button class="btn-primary btn-disabled" type="button" disabled>No inscrito</button>
+                    <span class="eyebrow">Debes estar inscrito para abrir</span>
+                  {% endif %}
                 </div>
               </div>
             </div>

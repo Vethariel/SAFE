@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.db.models import Count
 from .models import AppUser
 from enrollments.models import CourseInscription
 from django.contrib.auth import update_session_auth_hash
@@ -10,6 +11,11 @@ from .password_validator import is_valid_password
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from enrollments.services import (
+    get_courses_for_user,
+    _build_catalog_card_for_course,
+    _build_inscriptions_prefetch,
+)
 
 def login(request):
     " Muestra el formulario de inicio de sesion"
@@ -251,11 +257,27 @@ def profile(request):
     """Renderiza la vista de perfil."""
     inscriptions = CourseInscription.objects.filter(
         app_user=request.user
-    ).select_related('course')
+    ).select_related("course")
+
+    courses_qs = (
+        get_courses_for_user(request.user)
+        .annotate(
+            modules_count=Count("modules", distinct=True),
+            contents_count=Count("modules__contents", distinct=True),
+        )
+        .order_by("-created_at")
+    )
+    prefetch = _build_inscriptions_prefetch(request.user)
+    if prefetch is not None:
+        courses_qs = courses_qs.prefetch_related(prefetch)
+    course_cards = [
+        _build_catalog_card_for_course(course, request.user) for course in courses_qs
+    ]
 
     return render(request, "accounts/profile.html", {
         "user": request.user,
         "inscriptions": inscriptions, 
+        "course_cards": course_cards,
     })
 
 @login_required

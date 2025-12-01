@@ -22,6 +22,7 @@ class CatalogCourseCard:
     modules_count: int
     audience_label: str
     inscription_count: int
+    can_open: bool
 
 
 def _get_team_member_ids(supervisor: AppUser):
@@ -29,6 +30,27 @@ def _get_team_member_ids(supervisor: AppUser):
     return TeamUser.objects.filter(team__supervisor=supervisor).values_list(
         "app_user_id", flat=True
     )
+
+
+def user_can_open_course(user: AppUser, course: Course) -> bool:
+    """
+    Determina si el usuario puede abrir/ver el contenido de un curso.
+    """
+    if user.role == AppUser.UserRole.ANALISTA_TH:
+        return True
+
+    if user.role == AppUser.UserRole.COLABORADOR:
+        return CourseInscription.objects.filter(app_user=user, course=course).exists()
+
+    if user.role == AppUser.UserRole.SUPERVISOR:
+        team_members = _get_team_member_ids(user)
+        if not team_members:
+            return False
+        return CourseInscription.objects.filter(
+            app_user_id__in=team_members, course=course
+        ).exists()
+
+    return False
 
 
 def get_courses_for_user(user: AppUser):
@@ -295,6 +317,8 @@ def _build_catalog_card_for_course(
         audience_label = "Disponible"
         inscription_count = 0
 
+    can_open = user_can_open_course(user, course)
+
     return CatalogCourseCard(
         course=course,
         status_label=status_label,
@@ -304,6 +328,7 @@ def _build_catalog_card_for_course(
         modules_count=modules_count,
         audience_label=audience_label,
         inscription_count=inscription_count,
+        can_open=can_open,
     )
 
 
@@ -312,7 +337,9 @@ def get_catalog_courses_for_user(user: AppUser) -> List[CatalogCourseCard]:
     Build catalog-friendly course data including inscription/progress visibility by role.
     """
     courses_qs = (
-        get_courses_for_user(user)
+        Course.objects.filter(
+            status__in=[Course.CourseStatus.ACTIVE, Course.CourseStatus.DRAFT]
+        )
         .annotate(
             modules_count=Count("modules", distinct=True),
             contents_count=Count("modules__contents", distinct=True),
