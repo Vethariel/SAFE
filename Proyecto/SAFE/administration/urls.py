@@ -49,4 +49,11 @@ urlpatterns = [
         views.path_move_down,
         name="path_move_down",
     ),
+    path('delete/<int:pk>/', views.user_delete, name='user_del'),
+    path(
+        "course/<int:course_pk>/exam/create/",
+        views.create_exam_for_course,
+        name="create_exam_for_course",
+    ),
+    path("users/<int:user_id>/role/", views.user_change_role, name="user_change_role"),
 ]

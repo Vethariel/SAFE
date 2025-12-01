@@ -24,22 +24,26 @@
 
         <div class="field-group">
             <label for="username" class="label">Username</label>
-            <input id="username" name="username" placeholder="juanperez" required type="text" class="input" />
+            <input id="username" name="username" placeholder="juanperez" required type="text" class="input" 
+            value="{{ username|default:'' }}"/>
         </div>
 
         <div class="field-group mt">
             <label for="first_name" class="label">Nombre/s</label>
-            <input id="first_name" name="first_name" placeholder="Juan" required type="text" class="input" />
+            <input id="first_name" name="first_name" placeholder="Juan" required type="text" class="input" 
+            value="{{ first_name|default:'' }}"/>
         </div>
 
         <div class="field-group mt">
             <label for="last_name" class="label">Apellido/s</label>
-            <input id="last_name" name="last_name" placeholder="Pérez" required type="text" class="input" />
+            <input id="last_name" name="last_name" placeholder="Pérez" required type="text" class="input" 
+            value="{{ last_name|default:'' }}"/>
         </div>
 
         <div class="field-group mt">
             <label for="email" class="label">Correo electrónico</label>
-            <input id="email" name="email" placeholder="tucorreo@empresa.com" required type="email" class="input" />
+            <input id="email" name="email" placeholder="tucorreo@empresa.com" required type="email" class="input" 
+            value="{{ email|default:'' }}"/>
         </div>
 
         <div class="field-group mt">

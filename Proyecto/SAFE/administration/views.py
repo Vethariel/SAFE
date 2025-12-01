@@ -9,7 +9,8 @@ from administration.services import change_role
 from learning_paths.models import LearningPath, CourseInPath
 from accounts.models import AppUser
 from django.contrib import messages
-from .forms import CourseForm, ModuleForm, ContentForm, MaterialForm, LearningPathForm
+from .forms import CourseForm, ModuleForm, ContentForm, MaterialForm, LearningPathForm, ExamUploadForm,
+from courses.views import parse_evaluacion
 
 
 @login_required
@@ -35,7 +36,7 @@ def admin_panel(request):
 
     learning_paths = LearningPath.objects.all().order_by("-created_at")
 
-    usuarios = AppUser.objects.order_by("id").values("id", "username", "email")
+    usuarios = AppUser.objects.all().order_by("id")
 
     context = {
         "active_tab": active_tab,
@@ -73,6 +74,7 @@ def course_create(request):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     modules = course.modules.all().order_by("id")  # pyright: ignore[reportAttributeAccessIssue]
+    exam_module = modules.filter(name__iexact="Examen").first()
 
     selected_module = None
     module_contents = None
@@ -118,6 +120,7 @@ def course_detail(request, pk):
         "material_form": material_form,
         "content_edit_form": content_edit_form,
         "material_edit_form": material_edit_form,
+        "exam_module": exam_module,
     }
     return render(request, "administration/course_detail.html", context)
 
@@ -250,10 +253,17 @@ def content_create(request, module_pk):
         + f"?module={module.pk}#content-block-new"
     )
 
-    content_form = ContentForm(request.POST)
+    form_data = request.POST.copy()
+    block_type = form_data.get("block_type")
+    is_exam_module = module.name.strip().lower() == "examen"
+
+    if is_exam_module:
+        block_type = Content.BlockType.QUIZ
+        form_data["block_type"] = Content.BlockType.QUIZ
+
+    content_form = ContentForm(form_data)
 
     # Determinar el tipo esperado según el block_type
-    block_type = request.POST.get("block_type")
     expected_type = None
     if block_type == Content.BlockType.IMAGE:
         expected_type = "jpg"
@@ -272,6 +282,9 @@ def content_create(request, module_pk):
     if content_form.is_valid():
         content = content_form.save(commit=False)
         content.module = module
+
+        if is_exam_module:
+            content.block_type = Content.BlockType.QUIZ
 
         block_type = content.block_type
         content.content_type = Content.ContentType.MATERIAL
@@ -344,11 +357,17 @@ def content_update(request, content_pk):
             + f"?module={module.pk}&content={content.pk}#content-inspector"
         )
 
-    content_form = ContentForm(request.POST, instance=content)
+    is_exam_module = content.module.name.strip().lower() == "examen"
+
+    form_data = request.POST.copy()
+    if is_exam_module:
+        form_data["block_type"] = Content.BlockType.QUIZ
+
+    content_form = ContentForm(form_data, instance=content)
     material_instance = content.material if content.material else None
 
     # Determinar el tipo esperado según el block_type
-    block_type = request.POST.get("block_type")
+    block_type = form_data.get("block_type")
     expected_type = None
     if block_type == Content.BlockType.IMAGE:
         expected_type = "jpg"
@@ -370,6 +389,8 @@ def content_update(request, content_pk):
 
     if content_form.is_valid():
         updated_content = content_form.save(commit=False)
+        if is_exam_module:
+            updated_content.block_type = Content.BlockType.QUIZ
         block_type = updated_content.block_type
         updated_content.content_type = Content.ContentType.MATERIAL
 
@@ -397,7 +418,7 @@ def content_update(request, content_pk):
             updated_content.exam = content.exam
             updated_content.material = None
             updated_content.content_type = Content.ContentType.EXAM
-        elif block_type in (
+        elif not is_exam_module and block_type in (
             Content.BlockType.IMAGE,
             Content.BlockType.VIDEO,
             Content.BlockType.PDF,
@@ -735,3 +756,136 @@ def path_move_down(request, pk, course_id):
 
     messages.success(request, "Orden actualizado.")
     return redirect("path_detail", pk=pk)
+@login_required
+def user_delete(request, pk):
+    """
+    Elimina un usuario basado en su ID (pk).
+    Solo permite acceso a usuarios logueados (idealmente validar rol también).
+    """
+    # Buscamos el usuario o devolvemos error 404 si no existe
+    user_to_delete = get_object_or_404(AppUser, pk=pk)
+
+    # Protección: Evitar que el usuario se elimine a sí mismo
+    if user_to_delete == request.user:
+        messages.error(request, "No puedes eliminar tu propio usuario.")
+        return redirect("admin_panel") # Redirige de vuelta al panel
+
+    if request.method == "POST":
+        username = user_to_delete.username
+        user_to_delete.delete()
+        messages.success(request, f"Usuario '{username}' eliminado correctamente.")
+    
+    # Redirigimos al panel de administración (asegúrate que 'admin_panel' sea el name en administration/urls.py)
+    return redirect("admin_panel")
+
+# administration/views.py
+
+@login_required
+@require_POST
+def create_exam_for_course(request, course_pk):
+    """
+    Recibe un archivo .txt, valida su extensión y crea un Examen
+    dentro de un módulo automático llamado 'Examen'.
+    """
+    course = get_object_or_404(Course, pk=course_pk)
+    
+    # 1.Buscar o Crear el módulo "Examen"
+    exam_module, created = Module.objects.get_or_create(
+        course=course,
+        name="Examen",
+        defaults={
+            'description': 'Módulo dedicado a las evaluaciones del curso.',
+            # Si tienes un campo 'order' o 'duration', puedes poner defaults aquí
+        }
+    )
+
+    form = ExamUploadForm(request.POST, request.FILES)
+
+    if form.is_valid():
+        uploaded_file = request.FILES['file']
+        title = form.cleaned_data['title']
+        difficulty = form.cleaned_data['difficulty']
+
+        # 2. Validación de extensión (Backend)
+        if not uploaded_file.name.lower().endswith('.txt'):
+            messages.error(request, "Error: El archivo debe ser tipo .txt")
+            return redirect("course_detail", pk=course.pk)
+
+        try:
+            # 3. Leer y parsear el archivo de preguntas
+            raw_content = uploaded_file.read()
+            try:
+                text_content = raw_content.decode("utf-8")
+            except UnicodeDecodeError:
+                text_content = raw_content.decode("latin-1")
+
+            parsed_questions = parse_evaluacion(text_content)
+
+            # Adaptar al formato que usa el frontend (questions/answers)
+            questions = []
+            for pregunta in parsed_questions:
+                opciones = pregunta.get("opciones", [])
+                correctas = sum(1 for o in opciones if o.get("es_correcta"))
+                q_type = "single" if correctas <= 1 else "multiple"
+
+                answers = [
+                    {
+                        "id": opcion.get("id"),
+                        "text": opcion.get("texto"),
+                        "is_correct": opcion.get("es_correcta"),
+                    }
+                    for opcion in opciones
+                ]
+
+                questions.append(
+                    {
+                        "id": pregunta.get("id"),
+                        "text": pregunta.get("texto"),
+                        "type": q_type,
+                        "answers": answers,
+                    }
+                )
+
+            with transaction.atomic():
+                # 4. Crear el Exam con las preguntas parseadas
+                exam = Exam.objects.create(
+                    questions=questions,
+                    total_questions=len(questions),
+                    passing_score=60,
+                    max_tries=3,
+                )
+
+                # 5. Crear el Content vinculado al módulo "Examen"
+                Content.objects.create(
+                    module=exam_module,
+                    title=title,
+                    description=(
+                        f"Examen importado desde archivo: {uploaded_file.name}. "
+                        f"Dificultad: {difficulty}. "
+                        f"Preguntas: {len(questions)}."
+                    ),
+                    content_type=Content.ContentType.EXAM,
+                    block_type=Content.BlockType.QUIZ,
+                    exam=exam,
+                    is_mandatory=True,
+                )
+
+            messages.success(
+                request,
+                f"Examen '{title}' creado desde '{uploaded_file.name}' con {len(questions)} pregunta(s).",
+            )
+
+        except ValueError as e:
+            # Errores de formato de parse_evaluacion
+            messages.error(request, f"Error en el formato del archivo: {str(e)}")
+        except Exception as e:
+            messages.error(request, f"Error al procesar el examen: {str(e)}")
+
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f"{field}: {error}")
+
+
+    # Redirigir al curso, abriendo específicamente el módulo de exámenes
+    return redirect(reverse("course_detail", kwargs={"pk": course.pk}) + f"?module={exam_module.pk}")
