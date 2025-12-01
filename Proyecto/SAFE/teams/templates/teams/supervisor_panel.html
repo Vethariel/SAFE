@@ -1,13 +1,211 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
-  Panel de Supervisión
+  Supervisión — SAFE
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'teams/css/supervisor_panel.css' %}" />
 {% endblock %}
 
 {% block content %}
-  <div class="container">
-    <h1>Panel de Supervisión</h1>
-    <p>Bienvenido, {{ request.user.username }}.</p>
-    <p>Esta sección está en construcción.</p>
+  <div class="admin-container">
+    <h1 class="admin-title">Supervisión</h1>
+
+    <div class="admin-tabs">
+      <a href="?tab=equipo" class="admin-tab {% if active_tab == 'equipo' %}active{% endif %}">Mi Equipo</a>
+      <a href="?tab=alertas" class="admin-tab {% if active_tab == 'alertas' %}active{% endif %}">Alertas</a>
+      <a href="?tab=solicitudes" class="admin-tab {% if active_tab == 'solicitudes' %}active{% endif %}">Solicitudes</a>
+      <a href="?tab=estadisticas" class="admin-tab {% if active_tab == 'estadisticas' %}active{% endif %}">Estadísticas</a>
+    </div>
+
+    <!-- PROGRESO EQUIPO (Moved to Estadísticas) -->
+
+    {% if active_tab == 'equipo' %}
+      <div class="card-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Mi Equipo</h2>
+        </div>
+        <div class="table-responsive">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th class="th-name">Colaborador</th>
+                <th class="th-email">Email</th>
+                <th class="th-actions text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for member in team_members %}
+                <tr>
+                  <td class="font-weight-medium">{{ member.first_name }} {{ member.last_name }}</td>
+                  <td>{{ member.email }}</td>
+                  <td class="text-right">
+                    <button class="btn-secondary" onclick="openEnrollModal('{{ member.id }}', '{{ member.first_name }}')">Inscribir</button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center" style="padding: 2rem; color: #6b7280;">No tienes miembros en tu equipo.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- OTRAS PESTAÑAS -->
+    {% if active_tab == 'alertas' %}
+      <div class="card-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Alertas</h2>
+        </div>
+        <p class="text-muted">HU como should mostrar alertas relevantes para el supervisor</p>
+      </div>
+    {% endif %}
+
+    {% if active_tab == 'solicitudes' %}
+      <div class="card-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Solicitudes</h2>
+        </div>
+        <p class="text-muted">HU como should creación de solicitudes para el analista TH</p>
+      </div>
+    {% endif %}
+
+    {% if active_tab == 'estadisticas' %}
+      <div class="card-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Estadísticas y Progreso</h2>
+          <div class="actions-group">
+            <select class="role-select" style="min-width: 150px;">
+              <option value="todos">Todos</option>
+              <!-- Aquí irían más opciones de filtro -->
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th class="th-name">Colaborador</th>
+                <th class="th-course">Curso</th>
+                <th class="th-status">Estado</th>
+                <th class="th-actions text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inscription in team_progress %}
+                <tr>
+                  <td class="font-weight-medium">
+                    {{ inscription.app_user.first_name }} {{ inscription.app_user.last_name }}
+                    <div class="text-muted" style="font-size: 0.8em;">{{ inscription.app_user.email }}</div>
+                  </td>
+                  <td>{{ inscription.course.name }}</td>
+                  <td>
+                    <span class="status-badge status-{{ inscription.status }}">{{ inscription.get_status_display }}</span>
+                  </td>
+                  <td class="text-right">
+                    <form method="post" action="{% url 'unenroll_user_course' inscription.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="text-danger" onclick="return confirm('¿Desinscribir a este usuario?')">Desinscribir</button>
+                    </form>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center" style="padding: 2rem; color: #6b7280;">No hay progreso registrado para tu equipo.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
   </div>
+
+  <!-- Modal Inscribir -->
+  <div id="enrollModal" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="enrollModalTitle">Inscribir a Usuario</h3>
+        <span class="close-modal" onclick="closeEnrollModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem; display: flex; gap: 10px;">
+          <button class="btn-secondary" onclick="showCourseForm()" style="flex:1;">Curso</button>
+          <button class="btn-secondary" onclick="showPathForm()" style="flex:1;">Ruta</button>
+        </div>
+
+        <form id="enrollCourseForm" method="post" action="{% url 'enroll_user_course' %}" style="display:block;">
+          {% csrf_token %}
+          <input type="hidden" name="user_id" id="enrollCourseUserId" />
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="label">Seleccionar Curso</label>
+            <select name="course_id" class="input" required>
+              {% for course in available_courses %}
+                <option value="{{ course.id }}">{{ course.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEnrollModal()">Cancelar</button>
+            <button type="submit" class="btn-primary">Inscribir</button>
+          </div>
+        </form>
+
+        <form id="enrollPathForm" method="post" action="{% url 'enroll_user_path' %}" style="display:none;">
+          {% csrf_token %}
+          <input type="hidden" name="user_id" id="enrollPathUserId" />
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="label">Seleccionar Ruta</label>
+            <select name="path_id" class="input" required>
+              {% for path in available_paths %}
+                <option value="{{ path.id }}">{{ path.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEnrollModal()">Cancelar</button>
+            <button type="submit" class="btn-primary">Inscribir</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openEnrollModal(userId, userName) {
+      document.getElementById('enrollModal').style.display = 'flex'
+      document.getElementById('enrollModalTitle').innerText = 'Inscribir a ' + userName
+      document.getElementById('enrollCourseUserId').value = userId
+      document.getElementById('enrollPathUserId').value = userId
+      showCourseForm() // Default
+    }
+    
+    function closeEnrollModal() {
+      document.getElementById('enrollModal').style.display = 'none'
+    }
+    
+    function showCourseForm() {
+      document.getElementById('enrollCourseForm').style.display = 'block'
+      document.getElementById('enrollPathForm').style.display = 'none'
+    }
+    
+    function showPathForm() {
+      document.getElementById('enrollCourseForm').style.display = 'none'
+      document.getElementById('enrollPathForm').style.display = 'block'
+    }
+    
+    // Close modal if clicked outside
+    window.onclick = function (event) {
+      var modal = document.getElementById('enrollModal')
+      if (event.target == modal) {
+        modal.style.display = 'none'
+      }
+    }
+  </script>
 {% endblock %}
