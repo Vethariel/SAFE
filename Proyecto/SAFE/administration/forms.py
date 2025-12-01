@@ -1,7 +1,37 @@
 from django import forms
 from courses.models import Course, Module, Content, Material, Exam, Assignment
+from learning_paths.models import LearningPath
 from django.core.validators import FileExtensionValidator
 
+
+class LearningPathForm(forms.ModelForm):
+    class Meta:
+        model = LearningPath
+        fields = ["name", "description", "status", "header_img"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "w-full",
+                    "placeholder": "Nombre de la ruta",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "w-full",
+                    "placeholder": "Descripción de la ruta",
+                    "rows": 4,
+                }
+            ),
+            "status": forms.Select(attrs={"class": ""}),
+        }
+        labels = {
+            "name": "Nombre de la ruta",
+            "description": "Descripción",
+            "status": "Estado",
+            "header_img": "Imagen de portada",
+        }
+
+        
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course

@@ -15,10 +15,10 @@
     <div class="form-header">
       <h1>{{ title }}</h1>
       <p>
-        {% if course %}
-          Edita la información del curso
+        {% if learning_path %}
+          Edita la información de la ruta
         {% else %}
-          Completa los datos del nuevo curso
+          Completa los datos de la nueva ruta
         {% endif %}
       </p>
     </div>
@@ -47,15 +47,15 @@
             {% if 'warning' in message.tags %}
               <div class="alert-warning" style="background-color: #fff3cd; color: #856404; padding: 1rem; border: 1px solid #ffeeba; border-radius: 0.5rem; margin-bottom: 1.5rem;">
                 <strong>⚠️ Atención:</strong> {{ message }}
-                {% if affected_paths %}
+                {% if inactive_courses %}
                   <ul style="margin-top: 0.5rem;">
-                    {% for path in affected_paths %}
-                      <li>{{ path.name }}</li>
+                    {% for course in inactive_courses %}
+                      <li>{{ course.name }} ({{ course.get_status_display }})</li>
                     {% endfor %}
                   </ul>
                   <div style="margin-top: 1rem;">
-                    <input type="hidden" name="confirm_deactivate_paths" value="true" />
-                    <button type="submit" class="btn-primary" style="background-color: #856404; border-color: #856404;">Desactivar rutas y guardar</button>
+                    <input type="hidden" name="confirm_activate_courses" value="true" />
+                    <button type="submit" class="btn-primary" style="background-color: #856404; border-color: #856404;">Activar cursos y guardar</button>
                   </div>
                 {% endif %}
               </div>
@@ -63,7 +63,7 @@
           {% endfor %}
         {% endif %}
 
-        <!-- Nombre del curso -->
+        <!-- Nombre -->
         <div class="form-group">
           <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
           {{ form.name }}
@@ -81,37 +81,25 @@
           {% endif %}
         </div>
 
-        <!-- Duration y Status (2 columnas) -->
+        <!-- Grid para campos cortos -->
         <div class="form-row">
-          <div class="form-group">
-            <label for="{{ form.duration_hours.id_for_label }}">{{ form.duration_hours.label }}</label>
-            {{ form.duration_hours }}
-            {% if form.duration_hours.errors %}
-              <div class="field-error">{{ form.duration_hours.errors }}</div>
-            {% endif %}
-          </div>
-
+          <!-- Estado -->
           <div class="form-group">
             <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
             {{ form.status }}
-            <div class="field-help">
-              🟢 Activo: Visible para todos<br />
-              🟡 Borrador: Solo administradores<br />
-              🔴 Archivado: No visible
-            </div>
             {% if form.status.errors %}
               <div class="field-error">{{ form.status.errors }}</div>
             {% endif %}
           </div>
         </div>
 
-        <!-- Imagen de portada -->
+        <!-- Imagen -->
         <div class="form-group">
           <label for="{{ form.header_img.id_for_label }}">{{ form.header_img.label }}</label>
 
-          {% if course and course.header_img %}
+          {% if learning_path and learning_path.header_img %}
             <div class="current-image-preview">
-              <img src="{{ course.header_img.url }}" alt="Portada actual" class="preview-img" />
+              <img src="{{ learning_path.header_img.url }}" alt="Portada actual" class="preview-img" />
               <p class="preview-label">Imagen actual</p>
             </div>
             <div class="checkbox-group">
@@ -124,10 +112,10 @@
 
           <div class="file-input-only">{{ form.header_img }}</div>
           <div class="field-help">
-            {% if course and course.header_img %}
+            {% if learning_path and learning_path.header_img %}
               Sube una nueva imagen para reemplazar la actual
             {% else %}
-              Sube una imagen para la portada del curso
+              Sube una imagen para la portada de la ruta
             {% endif %}
           </div>
           {% if form.header_img.errors %}
@@ -137,16 +125,16 @@
 
         <!-- Actions -->
         <div class="form-actions">
-          {% if course %}
-            <a href="{% url 'course_detail' course.pk %}" class="btn-ghost">Cancelar</a>
+          {% if learning_path %}
+            <a href="{% url 'path_detail' learning_path.pk %}" class="btn-secondary">Cancelar</a>
           {% else %}
-            <a href="{% url 'admin_panel' %}" class="btn-ghost">Cancelar</a>
+            <a href="{% url 'admin_panel' %}?tab=rutas" class="btn-secondary">Cancelar</a>
           {% endif %}
           <button type="submit" class="btn-primary">
-            {% if course %}
+            {% if learning_path %}
               Guardar cambios
             {% else %}
-              Crear curso
+              Crear ruta
             {% endif %}
           </button>
         </div>

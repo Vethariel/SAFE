@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from accounts import views as av
 
 urlpatterns = [
     path("", views.admin_panel, name="admin_panel"),
@@ -29,6 +28,27 @@ urlpatterns = [
         name="content_delete",
     ),
     path("modules/<int:pk>/delete/", views.module_delete, name="module_delete"),
+    # Learning Paths
+    path("paths/create/", views.path_create, name="path_create"),
+    path("paths/<int:pk>/", views.path_detail, name="path_detail"),
+    path("paths/<int:pk>/edit/", views.path_update, name="path_update"),
+    path("paths/<int:pk>/delete/", views.path_delete, name="path_delete"),
+    path("paths/<int:pk>/add-course/", views.path_add_course, name="path_add_course"),
+    path(
+        "paths/<int:pk>/remove-course/<int:course_id>/",
+        views.path_remove_course,
+        name="path_remove_course",
+    ),
+    path(
+        "paths/<int:pk>/move-up/<int:course_id>/",
+        views.path_move_up,
+        name="path_move_up",
+    ),
+    path(
+        "paths/<int:pk>/move-down/<int:course_id>/",
+        views.path_move_down,
+        name="path_move_down",
+    ),
     path('delete/<int:pk>/', views.user_delete, name='user_del'),
     path(
         "course/<int:course_pk>/exam/create/",

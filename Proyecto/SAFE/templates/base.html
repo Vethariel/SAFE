@@ -1,24 +1,49 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}SAFE Academy{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>
+      {% block title %}
+        SAFE Academy
+      {% endblock %}
+    </title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    {% block extra_css %}
 
-    {% if request.path != "/login/"%}
-    {% include 'includes/navbar.html' %}
+    {% endblock %}
+  </head>
+  <body>
+    {% if request.path != '/login/' %}
+      {% include 'includes/navbar.html' %}
     {% endif %}
-    
 
     <main class="main-content">
-        {% block content %}
-        {% endblock %}
+      {% if messages %}
+        <div class="messages-container" style="max-width: 800px; margin: 1rem auto; padding: 0 1rem;">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}"
+              style="padding: 1rem; margin-bottom: 1rem; border-radius: 8px; {% if message.tags == 'success' %}
+                
+                background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;
+
+              {% elif message.tags == 'error' %}
+                
+                background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca;
+
+              {% else %}
+                
+                background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;
+
+              {% endif %}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}
+
+      {% endblock %}
     </main>
 
     {% include 'includes/footer.html' %}
-</body>
+  </body>
 </html>

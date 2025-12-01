@@ -157,15 +157,34 @@
     {% if active_tab == 'rutas' %}
       <div class="section-header">
         <h2>Rutas de aprendizaje</h2>
-        <a class="btn-nuevo">Nueva ruta</a>
+        <a href="{% url 'path_create' %}" class="btn-primary">Nueva ruta</a>
       </div>
 
-      {% if rutas %}
-
+      {% if learning_paths %}
+        <div class="courses-grid">
+          {% for path in learning_paths %}
+            <div class="course-card">
+              <div class="course-body">
+                <div class="course-title-row">
+                  <h3>{{ path.name }}</h3>
+                  <span class="badge badge-{{ path.status }}">{{ path.get_status_display }}</span>
+                </div>
+                <p class="course-description">{{ path.description|default:'Sin descripción' }}</p>
+                <div class="course-meta">
+                  <span>{{ path.estimated_duration|default:'--' }}h</span>
+                  <span>{{ path.courses.count }} cursos</span>
+                </div>
+                <div class="course-actions">
+                  <a href="{% url 'path_detail' path.pk %}" class="btn-secondary">Ver</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
       {% else %}
         <div class="empty-state">
           <p>No hay rutas creadas</p>
-          <a class="btn-primary">Crear primer ruta</a>
+          <a href="{% url 'path_create' %}" class="btn-primary">Crear primer ruta</a>
         </div>
       {% endif %}
     {% endif %}
