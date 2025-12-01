@@ -9,7 +9,14 @@ from administration.services import change_role
 from learning_paths.models import LearningPath, CourseInPath
 from accounts.models import AppUser
 from django.contrib import messages
-from .forms import CourseForm, ModuleForm, ContentForm, MaterialForm, LearningPathForm, ExamUploadForm,
+from .forms import (
+    CourseForm,
+    ModuleForm,
+    ContentForm,
+    MaterialForm,
+    LearningPathForm,
+    ExamUploadForm,
+)
 from courses.views import parse_evaluacion
 
 
@@ -181,10 +188,6 @@ def user_change_role(request, user_id):
     if not success:
         return HttpResponse("No tienes permisos para realizar esta acción", status=403)
 
-    messages.success(
-        request,
-        f"Rol de {target_user.username} actualizado a {target_user.get_role_display()}",
-    )
     return redirect(reverse("admin_panel") + "?tab=usuarios")
 
 
@@ -756,6 +759,8 @@ def path_move_down(request, pk, course_id):
 
     messages.success(request, "Orden actualizado.")
     return redirect("path_detail", pk=pk)
+
+
 @login_required
 def user_delete(request, pk):
     """
@@ -768,17 +773,19 @@ def user_delete(request, pk):
     # Protección: Evitar que el usuario se elimine a sí mismo
     if user_to_delete == request.user:
         messages.error(request, "No puedes eliminar tu propio usuario.")
-        return redirect("admin_panel") # Redirige de vuelta al panel
+        return redirect("admin_panel")  # Redirige de vuelta al panel
 
     if request.method == "POST":
         username = user_to_delete.username
         user_to_delete.delete()
         messages.success(request, f"Usuario '{username}' eliminado correctamente.")
-    
+
     # Redirigimos al panel de administración (asegúrate que 'admin_panel' sea el name en administration/urls.py)
     return redirect("admin_panel")
 
+
 # administration/views.py
+
 
 @login_required
 @require_POST
@@ -788,26 +795,26 @@ def create_exam_for_course(request, course_pk):
     dentro de un módulo automático llamado 'Examen'.
     """
     course = get_object_or_404(Course, pk=course_pk)
-    
+
     # 1.Buscar o Crear el módulo "Examen"
     exam_module, created = Module.objects.get_or_create(
         course=course,
         name="Examen",
         defaults={
-            'description': 'Módulo dedicado a las evaluaciones del curso.',
+            "description": "Módulo dedicado a las evaluaciones del curso.",
             # Si tienes un campo 'order' o 'duration', puedes poner defaults aquí
-        }
+        },
     )
 
     form = ExamUploadForm(request.POST, request.FILES)
 
     if form.is_valid():
-        uploaded_file = request.FILES['file']
-        title = form.cleaned_data['title']
-        difficulty = form.cleaned_data['difficulty']
+        uploaded_file = request.FILES["file"]
+        title = form.cleaned_data["title"]
+        difficulty = form.cleaned_data["difficulty"]
 
         # 2. Validación de extensión (Backend)
-        if not uploaded_file.name.lower().endswith('.txt'):
+        if not uploaded_file.name.lower().endswith(".txt"):
             messages.error(request, "Error: El archivo debe ser tipo .txt")
             return redirect("course_detail", pk=course.pk)
 
@@ -886,6 +893,7 @@ def create_exam_for_course(request, course_pk):
             for error in errors:
                 messages.error(request, f"{field}: {error}")
 
-
     # Redirigir al curso, abriendo específicamente el módulo de exámenes
-    return redirect(reverse("course_detail", kwargs={"pk": course.pk}) + f"?module={exam_module.pk}")
+    return redirect(
+        reverse("course_detail", kwargs={"pk": course.pk}) + f"?module={exam_module.pk}"
+    )
