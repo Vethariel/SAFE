@@ -93,10 +93,15 @@
             {{ module_form.name }}
             <button type="submit" class="btn-primary" title="Agregar módulo">+</button>
           </form>
-        </section>
+
+          <button type="button" id="toggleExamBtn" class="btn-primary" style="width: 100%; margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>📝</span> Crear Examen
+          </button>
+          </section>
 
         <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
-            <section class="contents-panel">
+          <!-- Contenidos Section -->  
+          <section class="contents-panel" id="regularContentsPanel">
               <div class="section-header">
                 <h2 class="section-title">Contenidos del módulo</h2>
               </div>
@@ -276,9 +281,10 @@
                     Selecciona un módulo a la izquierda para ver sus contenidos.
                 </div>
               {% endif %}
-            </section>
-
-                        <section class="create-exam-panel" style="background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
+           </section>
+                 
+              <!-- Crear Examen Section -->
+            <section id="examFormContainer" class="create-exam-panel" style="display: none; background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
                 
                 <div class="section-header" style="margin-bottom: 20px;">
                   <h2 class="section-title" style="font-size: 20px; font-weight: 600; color: var(--safe-dark);">Crear Examen</h2>
@@ -310,10 +316,7 @@
 
                       <div class="form-field form-field-full" style="grid-column: 1 / -1; margin-top: 16px;">
                         <label class="label" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Archivo de preguntas (.txt)</label>
-                        <small class="field-hint">
-                          Formato: líneas con <code>Q:ID|Texto de la pregunta</code> y
-                          <code>O:ID_OPCION|Texto opción|1/0</code>, separando preguntas por líneas en blanco.
-                        </small>
+                        <small class="field-hint">Formato: líneas con <code>Q:ID|Texto</code> y <code>O:ID|Texto|1/0</code>.</small>
                         
                         <input type="file" name="file" id="exam-file-input" accept=".txt" style="display: none;" onchange="updateFileName(this)">
                         
@@ -336,45 +339,13 @@
                 </div>
 
                 <div class="exam-mode-panel" data-exam-mode="manual">
-                  {% if exam_module %}
-                    <form method="post" action="{% url 'content_create' exam_module.pk %}" class="content-form exam-manual-form" data-create-form>
-                      {% csrf_token %}
-                      <input type="hidden" name="block_type" value="quiz">
-                      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="form-field form-field-title">
-                          <label>Título</label>
-                          <input type="text" name="title" placeholder="Ej. Evaluación manual" required>
-                        </div>
-                        <div class="form-field checkbox-field form-field-inline">
-                          <label class="checkbox-label">
-                            <input type="checkbox" name="is_mandatory">
-                            <span>Obligatorio</span>
-                          </label>
-                        </div>
-                        <div class="form-field form-field-full">
-                          <label>Descripción</label>
-                          <textarea name="description" rows="4" placeholder="Describe brevemente el examen."></textarea>
-                        </div>
-                        <div class="form-field form-field-full quiz-editor" data-quiz-editor style="display: block;">
-                          <label>Preguntas del cuestionario</label>
-                          <div id="manual-questions-container"></div>
-                          <button type="button" class="btn-secondary" onclick="addManualQuestion()">+ Agregar pregunta</button>
-                          <input type="hidden" name="quiz_questions" id="manual_quiz_questions" value="[]">
-                        </div>
-                      </div>
-                      <div class="content-form__actions">
-                        <button type="submit" class="btn-primary">Crear examen</button>
-                      </div>
-                    </form>
-                  {% else %}
-                    <div class="empty-state-small">Crea primero el módulo "Examen" para registrar evaluaciones manuales.</div>
-                  {% endif %}
+                   <div class="empty-state-small">Funcionalidad manual en construcción...</div>
                 </div>
             </section>
+
         </div>
       </div>
-  </div>
-
+<!-- Fin Crear Examen Section -->
   <div id="jsFeedbackModal" class="modal-backdrop" style="display: none;">
     <div class="modal-content feedback-content">
       <div class="feedback-icon icon-warning">
@@ -412,6 +383,43 @@
   </div>
 
   <script>
+    // 1. LÓGICA DEL TOGGLE (BOTÓN CREAR EXAMEN)
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleBtn = document.getElementById('toggleExamBtn');
+        const examContainer = document.getElementById('examFormContainer');
+        const regularContainer = document.getElementById('regularContentsPanel');
+
+        // Verificamos en consola si encontró los elementos
+        console.log("Toggle Elements:", { toggleBtn, examContainer, regularContainer });
+
+        if(toggleBtn && examContainer && regularContainer) {
+            toggleBtn.addEventListener('click', function() {
+                // Revisamos si está oculto
+                const isExamHidden = examContainer.style.display === 'none';
+                
+                if (isExamHidden) {
+                    // MOSTRAR EXAMEN, OCULTAR CONTENIDOS
+                    regularContainer.style.display = 'none';
+                    examContainer.style.display = 'block';
+                    
+                    // Cambiar botón a Cancelar
+                    toggleBtn.innerHTML = '<span>✖</span> Cancelar';
+                    toggleBtn.classList.remove('btn-primary');
+                    toggleBtn.classList.add('btn-secondary');
+                } else {
+                    // MOSTRAR CONTENIDOS, OCULTAR EXAMEN
+                    regularContainer.style.display = 'block';
+                    examContainer.style.display = 'none';
+                    
+                    // Restaurar botón
+                    toggleBtn.innerHTML = '<span>📝</span> Crear Examen';
+                    toggleBtn.classList.remove('btn-secondary');
+                    toggleBtn.classList.add('btn-primary');
+                }
+            });
+        }
+    });
+
     // 1. Lógica del Modal Alerta + Dropzone
     function showJsError(message) {
       const modal = document.getElementById('jsFeedbackModal');
@@ -481,7 +489,8 @@
               }
             });
         }
-
+        
+        // Inicializar lógica de botones de modo examen (TXT vs Manual)
         const examModeButtons = document.querySelectorAll('[data-exam-mode-target]');
         const examPanels = document.querySelectorAll('[data-exam-mode]');
         if (examModeButtons.length > 0 && examPanels.length > 0) {
@@ -1055,6 +1064,30 @@
             }
         }
       });
+      document.addEventListener('DOMContentLoaded', function () {
+      // Inicializar Toggle de agregar contenido (si existe)
+      const createToggle = document.querySelector('[data-create-toggle]');
+      const createPanel = document.querySelector('[data-create-panel]');
+      if (createToggle && createPanel) {
+        createToggle.addEventListener('click', () => {
+          createPanel.classList.toggle('is-collapsed');
+          const expanded = !createPanel.classList.contains('is-collapsed');
+          createToggle.textContent = expanded ? 'Cerrar formulario' : '+ Agregar contenido';
+        });
+      }
+      
+      // Inicializar Carrusel de contenidos
+      const notebook = document.getElementById('content-notebook');
+      if (notebook) {
+          const buttons = document.querySelectorAll('[data-carousel-btn]');
+          buttons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const direction = btn.dataset.carouselBtn === 'next' ? 1 : -1;
+              notebook.scrollBy({ top: direction * 200, behavior: 'smooth' });
+            });
+          });
+      }
+    });
     </script>
   </div>
   <div id="jsFeedbackModal" class="modal-backdrop" style="display: none;">
