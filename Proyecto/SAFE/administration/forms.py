@@ -7,7 +7,8 @@ from django.core.validators import FileExtensionValidator
 class LearningPathForm(forms.ModelForm):
     class Meta:
         model = LearningPath
-        fields = ["name", "description", "status", "header_img"]
+        fields = ["name", "description", "status"]
+
         widgets = {
             "name": forms.TextInput(
                 attrs={

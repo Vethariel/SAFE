@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from .models import AppUser
+from enrollments.models import CourseInscription
+from django.contrib.auth import update_session_auth_hash
 from .password_validator import is_valid_password
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
@@ -20,10 +22,6 @@ def login(request):
     #     return False
 
     # return True
-
-
-def profile(request):
-    return render(request, "accounts/profile.html")
 
 
 @require_POST
@@ -248,7 +246,85 @@ def user_toggle_status(request, pk):
     
     return redirect(reverse('admin_panel') + '?tab=usuarios')
 
+@login_required
+def profile(request):
+    """Renderiza la vista de perfil."""
+    inscriptions = CourseInscription.objects.filter(
+        app_user=request.user
+    ).select_related('course')
 
+    return render(request, "accounts/profile.html", {
+        "user": request.user,
+        "inscriptions": inscriptions, 
+    })
+
+@login_required
+@require_POST
+def update_profile_data(request):
+    user = request.user
+    first_name = request.POST.get('first_name', '').strip()
+    last_name = request.POST.get('last_name', '').strip()
+    email = request.POST.get('email', '').strip()
+
+    if not first_name or not last_name or not email:
+        messages.error(request, "Nombre, Apellido y Correo son obligatorios.")
+        return redirect("profile")
+
+    if AppUser.objects.filter(email=email).exclude(pk=user.pk).exists():
+        messages.error(request, "Ese correo electrónico ya está en uso.")
+        return redirect("profile")
+
+    try:
+        with transaction.atomic():
+            user.first_name = first_name
+            user.last_name = last_name
+            user.email = email
+            user.name = f"{first_name} {last_name}".strip()
+            user.save()
+        
+        messages.success(request, "Información actualizada con éxito. Por favor inicia sesión nuevamente.", extra_tags='logout-required')
+        
+        return redirect("profile")
+
+    except Exception as e:
+        messages.error(request, f"Error al actualizar: {e}")
+        return redirect("profile")
+
+
+@login_required
+@require_POST
+def change_password(request):
+    user = request.user
+    current_pass = request.POST.get('current_password', '')
+    new_pass = request.POST.get('new_password', '')
+    confirm_pass = request.POST.get('confirm_password', '')
+
+    if not user.check_password(current_pass):
+        messages.error(request, "La contraseña actual es incorrecta.")
+        return redirect("profile")
+
+    if new_pass != confirm_pass:
+        messages.error(request, "Las nuevas contraseñas no coinciden.")
+        return redirect("profile")
+
+    if not is_valid_password(new_pass):
+        messages.error(request, "La nueva contraseña no cumple con los requisitos de seguridad.")
+        return redirect("profile")
+
+    try:
+        user.set_password(new_pass)
+        user.save()
+        
+        update_session_auth_hash(request, user) 
+        
+        messages.success(request, "Contraseña actualizada con éxito. Por favor inicia sesión nuevamente.", extra_tags='logout-required')
+        
+        return redirect("profile")
+        
+    except Exception as e:
+        messages.error(request, "Error al cambiar la contraseña.")
+        return redirect("profile")
+    
 def logout(request):
     auth_logout(request)
     return redirect("login")

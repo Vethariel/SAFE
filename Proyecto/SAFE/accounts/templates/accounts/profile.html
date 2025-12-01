@@ -1,10 +1,160 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Profile — SAFE{% endblock %}
+{% block title %}Mi Perfil — SAFE{% endblock %}
 
 {% block extra_css %}
+  <link rel="stylesheet" href="{% static 'accounts/css/profile.css' %}">
+  <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}"> 
 {% endblock %}
 
 {% block content %}
+<div class="profile-container">
+    
+    <h1 class="page-title">Información Personal</h1>
+
+    <div class="profile-card">
+        <div class="profile-grid">
+            <div class="profile-field">
+                <span class="field-label">Nombre/s</span>
+                <div class="field-value">{{ user.first_name|default:"-" }}</div>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Apellido/s</span>
+                <div class="field-value">{{ user.last_name|default:"-" }}</div>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Correo Electrónico</span>
+                <div class="field-value">{{ user.email }}</div>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Username</span>
+                <div class="field-value">{{ user.username }}</div>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Rol</span>
+                <div class="field-value">{{ user.get_role_display }}</div>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Estado</span>
+                <div style="padding-top: 4px;">
+                    <span class="{% if user.status == 'active' %}badge-active{% elif user.status == 'pending' %}badge-pending{% else %}badge-inactive{% endif %}">
+                        {{ user.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <button class="btn-gold" onclick="document.getElementById('updateInfoModal').style.display='flex'">
+                Actualizar información
+            </button>
+            <button class="btn-secondary" onclick="document.getElementById('changePassModal').style.display='flex'">
+                Cambiar Contraseña
+            </button>
+        </div>
+    </div>
+
+    <h1 class="page-title">Mis cursos</h1>
+
+    <div class="profile-card">
+
+        {% if inscriptions %}
+            <div class="courses-grid">
+                {% for inscription in inscriptions %}
+                    <div class="course-card-mini">
+                        <div class="course-header-mini"></div>
+                        
+                        <div class="course-body-mini">
+                            <h3 class="course-title-mini">{{ inscription.course.name }}</h3>
+                            <div class="course-info-mini">
+                                {{ inscription.course.duration_hours|default:"0" }} horas • {{ inscription.course.modules.count }} módulos
+                            </div>
+                            
+                            <a href="{% url 'course_detail' inscription.course.id %}" class="btn-open-course">
+                                Abrir
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="padding: 40px; text-align: center; background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; color: #6b7280;">
+                Aún no estás inscrito en ningún curso.
+            </div>
+        {% endif %}
+
+</div>
+
+<div id="updateInfoModal" class="modal-backdrop-msg" style="display: none;">
+    <div class="modal-content-msg" style="max-width: 600px; text-align: left;">
+        <h3 class="feedback-title" style="margin-bottom: 20px;">Actualizar Información</h3>
+        <form method="post" action="{% url 'update_profile_data' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div><label class="label">Nombre/s</label><input type="text" name="first_name" class="input" value="{{ user.first_name }}" required></div>
+                <div><label class="label">Apellido/s</label><input type="text" name="last_name" class="input" value="{{ user.last_name }}" required></div>
+            </div>
+            <div style="margin-bottom: 15px;"><label class="label">Correo electrónico</label><input type="email" name="email" class="input" value="{{ user.email }}" required></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div><label class="label">Username</label><input type="text" class="input input-readonly" value="{{ user.username }}" readonly style="background:#f3f4f6"></div>
+                <div><label class="label">Rol</label><input type="text" class="input input-readonly" value="{{ user.get_role_display }}" readonly style="background:#f3f4f6"></div>
+                <div><label class="label">Estado</label><input type="text" class="input input-readonly" value="{{ user.get_status_display }}" readonly style="background:#f3f4f6"></div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-secondary" style="border:1px solid #ccc; color:#333;" onclick="document.getElementById('updateInfoModal').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-gold">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="changePassModal" class="modal-backdrop-msg" style="display: none;">
+    <div class="modal-content-msg" style="max-width: 450px; text-align: left;">
+        <h3 class="feedback-title" style="margin-bottom: 20px;">Cambiar Contraseña</h3>
+        <form method="post" action="{% url 'change_password' %}">
+            {% csrf_token %}
+            <div style="margin-bottom: 15px;"><label class="label">Contraseña Actual</label><input type="password" name="current_password" class="input" required placeholder="********"></div>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+            <div style="margin-bottom: 15px;"><label class="label">Nueva Contraseña</label><input type="password" name="new_password" class="input" required placeholder="********"></div>
+            <div style="margin-bottom: 20px;"><label class="label">Confirmar Contraseña</label><input type="password" name="confirm_password" class="input" required placeholder="********"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-secondary" style="border:1px solid #ccc; color:#333;" onclick="document.getElementById('changePassModal').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-gold">Actualizar Contraseña</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if messages %}
+<div id="feedbackModal" class="modal-backdrop-msg" style="display: flex;">
+  <div class="modal-content-msg">
+    {% for message in messages %}
+      <div class="feedback-icon {% if 'success' in message.tags %}icon-success{% else %}icon-warning{% endif %}">
+          {% if 'success' in message.tags %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          {% endif %}
+      </div>
+      <h3 class="feedback-title">
+        {% if 'success' in message.tags %}¡Excelente!{% else %}Atención{% endif %}
+      </h3>
+      <p class="feedback-text">{{ message }}</p>
+      
+      {% if 'logout-required' in message.tags %}
+         <a href="{% url 'logout' %}" class="btn-gold btn-wide" style="display:block; text-align:center; text-decoration:none;">
+            Aceptar
+         </a>
+      {% else %}
+         <button type="button" class="btn-gold btn-wide" onclick="document.getElementById('feedbackModal').style.display='none'">
+            Aceptar
+         </button>
+      {% endif %}
+      
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

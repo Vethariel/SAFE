@@ -12,4 +12,8 @@ urlpatterns = [
     path("logout/", views.logout, name="logout"),
     path('update-role/<int:pk>/', views.user_update_role, name='user_update_role'),
     path('toggle-status/<int:pk>/', views.user_toggle_status, name='user_toggle_status'),
+    path('profile/', views.profile, name='profile'),
+    path('profile/update/', views.update_profile_data, name='update_profile_data'),
+    path('profile/password/', views.change_password, name='change_password'),
+    path('logout/', views.logout, name='logout')
 ]
