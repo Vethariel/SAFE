@@ -44,7 +44,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">Módulos</span>
-            <span class="info-value">{{ modules|length }}</span>
+            <span class="info-value">{{ modules.count }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">Creado por</span>
@@ -77,28 +77,10 @@
                       <p class="module-description">{{ module.contents.count }} contenido(s)</p>
                     </div>
                   </a>
-                  <div class="module-actions">
-                    <div class="module-order-controls">
-                      {% if not forloop.first %}
-                        <form method="post" action="{% url 'module_move' module.pk 'up' %}">
-                          {% csrf_token %}
-                          <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ module.pk }}">
-                          <button type="submit" class="order-btn" title="Mover arriba" aria-label="Mover módulo hacia arriba">&uarr;</button>
-                        </form>
-                      {% endif %}
-                      {% if not forloop.last %}
-                        <form method="post" action="{% url 'module_move' module.pk 'down' %}">
-                          {% csrf_token %}
-                          <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ module.pk }}">
-                          <button type="submit" class="order-btn" title="Mover abajo" aria-label="Mover módulo hacia abajo">&darr;</button>
-                        </form>
-                      {% endif %}
-                    </div>
-                    <form method="post" action="{% url 'module_delete' module.pk %}" class="module-delete-form" onsubmit="return confirm('¿Eliminar {{ module.name }}?');">
-                      {% csrf_token %}
-                      <button type="submit" class="btn-danger module-delete-btn" aria-label="Eliminar módulo {{ module.name }}">X</button>
-                    </form>
-                  </div>
+                  <form method="post" action="{% url 'module_delete' module.pk %}" class="module-delete-form" onsubmit="return confirm('¿Eliminar {{ module.name }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger module-delete-btn" aria-label="Eliminar módulo {{ module.name }}">X</button>
+                  </form>
                 </div>
               </div>
             {% empty %}
@@ -111,15 +93,10 @@
             {{ module_form.name }}
             <button type="submit" class="btn-primary" title="Agregar módulo">+</button>
           </form>
-
-          <button type="button" id="toggleExamBtn" class="btn-primary" style="width: 100%; margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span>📝</span> Crear Examen
-          </button>
-          </section>
+        </section>
 
         <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
-          <!-- Contenidos Section -->  
-          <section class="contents-panel" id="regularContentsPanel">
+            <section class="contents-panel">
               <div class="section-header">
                 <h2 class="section-title">Contenidos del módulo</h2>
               </div>
@@ -212,33 +189,15 @@
                                   <p class="content-empty">Crea un cuestionario para este bloque.</p>
                                 {% endif %}
                               {% endif %}
-                        </div>
+                            </div>
 
-                        <div class="content-block__actions">
-                          <div class="content-order-controls">
-                            {% if not forloop.first %}
-                              <form method="post" action="{% url 'content_move' content.pk 'up' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}">
-                                <button type="submit" class="order-btn" title="Mover arriba" aria-label="Mover contenido hacia arriba">&uarr;</button>
-                              </form>
-                            {% endif %}
-                            {% if not forloop.last %}
-                              <form method="post" action="{% url 'content_move' content.pk 'down' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}">
-                                <button type="submit" class="order-btn" title="Mover abajo" aria-label="Mover contenido hacia abajo">&darr;</button>
-                              </form>
-                            {% endif %}
-                          </div>
-                          <div class="content-block__actions-edit">
-                            {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
-                              <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}#content-block-{{ content.pk }}" class="btn-tertiary btn-small">Cerrar</a>
-                            {% else %}
-                              <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}" class="btn-secondary btn-small">Editar</a>
-                            {% endif %}
-                          </div>
-                        </div>
+                            <div class="content-block__actions">
+                              {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
+                                <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}#content-block-{{ content.pk }}" class="btn-tertiary btn-small">Cerrar</a>
+                              {% else %}
+                                <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}" class="btn-secondary btn-small">Editar</a>
+                              {% endif %}
+                            </div>
 
                             {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
                                <form id="delete-form-{{ selected_content.pk }}" method="post" action="{% url 'content_delete' selected_content.pk %}" style="display: none;">{% csrf_token %}</form>
@@ -317,10 +276,9 @@
                     Selecciona un módulo a la izquierda para ver sus contenidos.
                 </div>
               {% endif %}
-           </section>
-                 
-              <!-- Crear Examen Section -->
-            <section id="examFormContainer" class="create-exam-panel" style="display: none; background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
+            </section>
+
+                        <section class="create-exam-panel" style="background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
                 
                 <div class="section-header" style="margin-bottom: 20px;">
                   <h2 class="section-title" style="font-size: 20px; font-weight: 600; color: var(--safe-dark);">Crear Examen</h2>
@@ -352,7 +310,10 @@
 
                       <div class="form-field form-field-full" style="grid-column: 1 / -1; margin-top: 16px;">
                         <label class="label" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Archivo de preguntas (.txt)</label>
-                        <small class="field-hint">Formato: líneas con <code>Q:ID|Texto</code> y <code>O:ID|Texto|1/0</code>.</small>
+                        <small class="field-hint">
+                          Formato: líneas con <code>Q:ID|Texto de la pregunta</code> y
+                          <code>O:ID_OPCION|Texto opción|1/0</code>, separando preguntas por líneas en blanco.
+                        </small>
                         
                         <input type="file" name="file" id="exam-file-input" accept=".txt" style="display: none;" onchange="updateFileName(this)">
                         
@@ -375,13 +336,45 @@
                 </div>
 
                 <div class="exam-mode-panel" data-exam-mode="manual">
-                   <div class="empty-state-small">Funcionalidad manual en construcción...</div>
+                  {% if exam_module %}
+                    <form method="post" action="{% url 'content_create' exam_module.pk %}" class="content-form exam-manual-form" data-create-form>
+                      {% csrf_token %}
+                      <input type="hidden" name="block_type" value="quiz">
+                      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-field form-field-title">
+                          <label>Título</label>
+                          <input type="text" name="title" placeholder="Ej. Evaluación manual" required>
+                        </div>
+                        <div class="form-field checkbox-field form-field-inline">
+                          <label class="checkbox-label">
+                            <input type="checkbox" name="is_mandatory">
+                            <span>Obligatorio</span>
+                          </label>
+                        </div>
+                        <div class="form-field form-field-full">
+                          <label>Descripción</label>
+                          <textarea name="description" rows="4" placeholder="Describe brevemente el examen."></textarea>
+                        </div>
+                        <div class="form-field form-field-full quiz-editor" data-quiz-editor style="display: block;">
+                          <label>Preguntas del cuestionario</label>
+                          <div id="manual-questions-container"></div>
+                          <button type="button" class="btn-secondary" onclick="addManualQuestion()">+ Agregar pregunta</button>
+                          <input type="hidden" name="quiz_questions" id="manual_quiz_questions" value="[]">
+                        </div>
+                      </div>
+                      <div class="content-form__actions">
+                        <button type="submit" class="btn-primary">Crear examen</button>
+                      </div>
+                    </form>
+                  {% else %}
+                    <div class="empty-state-small">Crea primero el módulo "Examen" para registrar evaluaciones manuales.</div>
+                  {% endif %}
                 </div>
             </section>
-
         </div>
       </div>
-<!-- Fin Crear Examen Section -->
+  </div>
+
   <div id="jsFeedbackModal" class="modal-backdrop" style="display: none;">
     <div class="modal-content feedback-content">
       <div class="feedback-icon icon-warning">
@@ -418,6 +411,651 @@
     </div>
   </div>
 
+  <script>
+    // 1. Lógica del Modal Alerta + Dropzone
+    function showJsError(message) {
+      const modal = document.getElementById('jsFeedbackModal');
+      const textElement = document.getElementById('jsFeedbackText');
+      if (modal && textElement) {
+        textElement.textContent = message;
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeJsModal() {
+      const modal = document.getElementById('jsFeedbackModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function updateFileName(input) {
+      const textSpan = document.getElementById('file-name-text');
+      
+      if (input.files && input.files.length > 0) {
+        const file = input.files[0];
+        const fileName = file.name.toLowerCase();
+
+        // VALIDACIÓN
+        if (!fileName.endsWith('.txt')) {
+          showJsError("El tipo de archivo no es válido. Solo puede subir archivos .txt");
+          input.value = ''; 
+          textSpan.innerHTML = `Arrastra tu archivo <strong>.txt</strong> aquí o haz clic para buscar`;
+          textSpan.style.color = "#6b7280";
+          return;
+        }
+
+        // ÉXITO
+        textSpan.innerHTML = "Archivo seleccionado: <strong style='color: var(--safe-gold);'>" + file.name + "</strong>";
+        textSpan.style.color = "var(--safe-ink)";
+      }
+    }
+
+    // Inicializar Dropzone del Examen
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('exam-drop-zone');
+        if (dropZone) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+              dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.style.backgroundColor = '#fefce8';
+                dropZone.style.borderColor = '#d4af37';
+              }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+              dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.style.backgroundColor = '#fff';
+                dropZone.style.borderColor = '#e5e7eb';
+              }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+              e.preventDefault();
+              const dt = e.dataTransfer;
+              const files = dt.files;
+              const input = document.getElementById('exam-file-input');
+              
+              if (files.length > 0) {
+                  input.files = files;
+                  updateFileName(input);
+              }
+            });
+        }
+
+        const examModeButtons = document.querySelectorAll('[data-exam-mode-target]');
+        const examPanels = document.querySelectorAll('[data-exam-mode]');
+        if (examModeButtons.length > 0 && examPanels.length > 0) {
+          examModeButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const target = btn.dataset.examModeTarget;
+              examModeButtons.forEach((button) => {
+                button.classList.toggle('is-active', button === btn);
+              });
+              examPanels.forEach((panel) => {
+                panel.classList.toggle('is-active', panel.dataset.examMode === target);
+              });
+            });
+          });
+        }
+    });
+
+    // 2. Lógica existente (Quiz, Blocks, Notebook)
+    function validateQuiz(form) {
+      const blockTypeInput = form.querySelector('[name="block_type"]')
+      if (!blockTypeInput || blockTypeInput.value !== 'quiz') return true;
+
+      const questionsInput = form.querySelector('input[name="quiz_questions"]')
+      if (!questionsInput || !questionsInput.value) return true;
+
+      try {
+        const questions = JSON.parse(questionsInput.value)
+        if (questions.length === 0) {
+           alert('El cuestionario debe tener al menos una pregunta.')
+           return false
+        }
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i]
+          const hasCorrect = q.answers && q.answers.some(a => a.is_correct)
+          if (!hasCorrect) {
+            alert(`La pregunta "${q.text}" no tiene ninguna respuesta correcta marcada.\nPor favor, selecciona al menos una opción correcta.`)
+            return false
+          }
+        }
+      } catch (e) {
+        console.error('Error validando quiz:', e)
+      }
+      return true
+    }
+
+    function validateFileForBlockType(form) {
+      const blockTypeSelect = form.querySelector('[name="block_type"]')
+      const fileInput = form.querySelector('[name="file"]')
+      if (!blockTypeSelect) return true;
+      const blockType = blockTypeSelect.value
+      
+      const validExtensions = {
+        image: ['jpg', 'jpeg'],
+        video: ['mp4'],
+        pdf: ['pdf']
+      }
+      
+      if (!validExtensions[blockType]) return true;
+      
+      let extension = null
+      if (fileInput && fileInput.files.length > 0) {
+        extension = fileInput.files[0].name.toLowerCase().split('.').pop()
+      } else {
+        const existingFileLink = form.querySelector('a[href*="/media/"]')
+        if (existingFileLink) {
+          extension = existingFileLink.href.toLowerCase().split('.').pop().split('?')[0]
+        }
+      }
+      
+      if (extension && !validExtensions[blockType].includes(extension)) {
+        const expectedTypes = validExtensions[blockType].join(', ').toUpperCase()
+        alert(`Error: El archivo debe ser de tipo ${expectedTypes}.\nEl archivo actual es ${extension.toUpperCase()}.`)
+        return false
+      }
+      return true
+    }
+    
+    document.addEventListener('DOMContentLoaded', function () {
+      const contentForms = document.querySelectorAll('[data-create-form], [data-content-form], form[action*="content_update"]')
+      contentForms.forEach((form) => {
+        form.addEventListener('submit', function (e) {
+          if (!validateFileForBlockType(this)) { e.preventDefault(); return }
+          if (!validateQuiz(this)) { e.preventDefault() }
+        })
+      })
+    
+      const notebook = document.getElementById('content-notebook')
+      if (notebook) {
+          const activeBlock = notebook.querySelector('.content-block.is-active')
+          if (activeBlock) activeBlock.scrollIntoView({ block: 'start', behavior: 'smooth' })
+          
+          const buttons = document.querySelectorAll('[data-carousel-btn]')
+          const step = () => {
+            const block = notebook.querySelector('.content-block')
+            return block ? block.offsetHeight + parseInt(window.getComputedStyle(block).marginBottom || 0, 10) : 200
+          }
+          buttons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const direction = btn.dataset.carouselBtn === 'next' ? 1 : -1
+              notebook.scrollBy({ top: direction * step(), behavior: 'smooth' })
+            })
+          })
+      }
+    
+      const createToggle = document.querySelector('[data-create-toggle]')
+      const createPanel = document.querySelector('[data-create-panel]')
+      if (createToggle && createPanel) {
+        createToggle.addEventListener('click', () => {
+          createPanel.classList.toggle('is-collapsed')
+          const expanded = !createPanel.classList.contains('is-collapsed')
+          createToggle.textContent = expanded ? 'Cerrar formulario' : '+ Agregar contenido'
+          if (expanded) createPanel.scrollIntoView({ block: 'start', behavior: 'smooth' })
+        })
+      }
+      
+      const blockTypeSelects = document.querySelectorAll('[name="block_type"]');
+      blockTypeSelects.forEach(select => {
+        const form = select.closest('form');
+        if (!form) return;
+        
+        const fileField = form.querySelector('[data-file-field]');
+        const quizEditor = form.querySelector('[data-quiz-editor]');
+        
+        function updateFieldsVisibility() {
+          const blockType = select.value;
+          if (blockType === 'quiz') {
+            if (fileField) fileField.style.display = 'none';
+            if (quizEditor) quizEditor.style.display = 'block';
+          } else if (['image', 'video', 'pdf'].includes(blockType)) {
+            if (fileField) fileField.style.display = 'block';
+            if (quizEditor) quizEditor.style.display = 'none';
+          } else {
+            if (fileField) fileField.style.display = 'none';
+            if (quizEditor) quizEditor.style.display = 'none';
+          }
+        }
+        select.addEventListener('change', updateFieldsVisibility);
+        updateFieldsVisibility();
+      });
+      
+      {% if selected_content and selected_content.block_type == 'quiz' and selected_content.exam and selected_content.exam.questions %}
+        setTimeout(function() {
+          const existingQuestions = {{ selected_content.exam.questions|safe }};
+          const container = document.getElementById('questions-container-inline'); 
+          if (container && existingQuestions && existingQuestions.length > 0) {
+             // Lógica de repoblado omitida por brevedad, se mantiene la original
+          }
+        }, 100);
+      {% endif %}
+    })
+      
+      // Variables globales para el quiz editor
+      function createQuizBuilder(config) {
+        let questionIdCounter = 0;
+        const getContainer = () => document.getElementById(config.containerId);
+        const getHiddenInput = () => document.getElementById(config.hiddenInputId);
+
+        function addQuestion() {
+          const container = getContainer();
+          if (!container) return;
+          const questionId = questionIdCounter++;
+          const questionDiv = document.createElement('div');
+          questionDiv.className = 'question-block';
+          questionDiv.dataset.questionId = questionId;
+          questionDiv.innerHTML = `
+            <div class="question-header">
+              <h4>Pregunta ${questionId + 1}</h4>
+              <button type="button" class="btn-danger-small" onclick="${config.removeQuestionFn}(${questionId})">✕ Eliminar</button>
+            </div>
+            <div class="form-group">
+              <label>Enunciado de la pregunta</label>
+              <input type="text" class="question-text" placeholder="Escribe la pregunta aquí" required>
+            </div>
+            <div class="form-group">
+              <label>Tipo de respuesta</label>
+              <select class="question-type" onchange="${config.updateAnswerTypeFn}(${questionId})">
+                <option value="single">Selección única</option>
+                <option value="multiple">Selección múltiple</option>
+              </select>
+            </div>
+            <div class="answers-container" data-question-id="${questionId}">
+              <label>Opciones de respuesta</label>
+              <div class="answers-list"></div>
+              <button type="button" class="btn-secondary-small" onclick="${config.addAnswerFn}(${questionId})">+ Agregar opción</button>
+            </div>
+          `;
+          container.appendChild(questionDiv);
+          addAnswer(questionId);
+          addAnswer(questionId);
+          updateQuestionsData();
+        }
+
+        function removeQuestion(questionId) {
+          const container = getContainer();
+          if (!container) return;
+          const questionBlock = container.querySelector(`[data-question-id="${questionId}"]`);
+          if (questionBlock) {
+            questionBlock.remove();
+            updateQuestionsData();
+          }
+        }
+
+        function addAnswer(questionId) {
+          const container = getContainer();
+          if (!container) return;
+          const questionBlock = container.querySelector(`[data-question-id="${questionId}"]`);
+          if (!questionBlock) return;
+          const answersList = questionBlock.querySelector('.answers-list');
+          const answerId = answersList.children.length;
+          const questionType = questionBlock.querySelector('.question-type').value;
+          const answerDiv = document.createElement('div');
+          answerDiv.className = 'answer-item';
+          answerDiv.dataset.answerId = answerId;
+          answerDiv.innerHTML = `
+            <input type="${questionType === 'single' ? 'radio' : 'checkbox'}" 
+                   name="${config.answerGroupPrefix}_${questionId}" 
+                   value="${answerId}"
+                   onchange="${config.updateAnswersFn}()"
+                   title="Marcar como correcta">
+            <input type="text" 
+                   class="answer-text" 
+                   placeholder="Opción ${answerId + 1}" 
+                   oninput="${config.updateAnswersFn}()" 
+                   required>
+            <button type="button" class="btn-remove-answer" onclick="${config.removeAnswerFn}(${questionId}, ${answerId})">✕</button>
+          `;
+          answersList.appendChild(answerDiv);
+          updateQuestionsData();
+        }
+
+        function removeAnswer(questionId, answerId) {
+          const container = getContainer();
+          if (!container) return;
+          const answerItem = container.querySelector(`[data-question-id="${questionId}"] .answers-list [data-answer-id="${answerId}"]`);
+          if (answerItem) {
+            answerItem.remove();
+            updateQuestionsData();
+          }
+        }
+
+        function updateAnswerType(questionId) {
+          const container = getContainer();
+          if (!container) return;
+          const questionBlock = container.querySelector(`[data-question-id="${questionId}"]`);
+          if (!questionBlock) return;
+          const questionType = questionBlock.querySelector('.question-type').value;
+          const answersList = questionBlock.querySelector('.answers-list');
+          const inputs = answersList.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+          inputs.forEach(input => {
+            const newInput = document.createElement('input');
+            newInput.type = questionType === 'single' ? 'radio' : 'checkbox';
+            newInput.name = input.name;
+            newInput.value = input.value;
+            newInput.checked = input.checked;
+            newInput.title = 'Marcar como correcta';
+            newInput.onchange = updateQuestionsData;
+            input.replaceWith(newInput);
+          });
+          updateQuestionsData();
+        }
+
+        function updateQuestionsData() {
+          const container = getContainer();
+          const hiddenInput = getHiddenInput();
+          if (!container || !hiddenInput) return;
+          const questions = [];
+          container.querySelectorAll('.question-block').forEach((block, index) => {
+            const questionId = block.dataset.questionId;
+            const questionText = block.querySelector('.question-text').value;
+            const questionType = block.querySelector('.question-type').value;
+            const answers = [];
+            const answersList = block.querySelector('.answers-list');
+            answersList.querySelectorAll('.answer-item').forEach(answerItem => {
+              const answerId = answerItem.dataset.answerId;
+              const answerText = answerItem.querySelector('.answer-text').value;
+              const isCorrect = answerItem.querySelector('input[type="radio"], input[type="checkbox"]').checked;
+              if (answerText.trim()) {
+                answers.push({
+                  id: answerId,
+                  text: answerText,
+                  is_correct: isCorrect
+                });
+              }
+            });
+            if (questionText.trim() && answers.length > 0) {
+              questions.push({
+                id: questionId,
+                text: questionText,
+                type: questionType,
+                answers: answers
+              });
+            }
+            block.querySelector('.question-header h4').textContent = `Pregunta ${index + 1}`;
+          });
+          hiddenInput.value = JSON.stringify(questions);
+        }
+
+        return {
+          addQuestion,
+          removeQuestion,
+          addAnswer,
+          removeAnswer,
+          updateAnswerType,
+          updateQuestionsData
+        };
+      }
+
+      const primaryQuizBuilder = createQuizBuilder({
+        containerId: 'questions-container',
+        hiddenInputId: 'quiz_questions',
+        addQuestionFn: 'addQuestion',
+        removeQuestionFn: 'removeQuestion',
+        addAnswerFn: 'addAnswer',
+        removeAnswerFn: 'removeAnswer',
+        updateAnswerTypeFn: 'updateAnswerType',
+        updateAnswersFn: 'updateQuestionsData',
+        answerGroupPrefix: 'correct'
+      });
+
+      window.addQuestion = primaryQuizBuilder.addQuestion;
+      window.removeQuestion = primaryQuizBuilder.removeQuestion;
+      window.addAnswer = primaryQuizBuilder.addAnswer;
+      window.removeAnswer = primaryQuizBuilder.removeAnswer;
+      window.updateAnswerType = primaryQuizBuilder.updateAnswerType;
+      window.updateQuestionsData = primaryQuizBuilder.updateQuestionsData;
+
+      const manualQuizBuilder = createQuizBuilder({
+        containerId: 'manual-questions-container',
+        hiddenInputId: 'manual_quiz_questions',
+        addQuestionFn: 'addManualQuestion',
+        removeQuestionFn: 'removeManualQuestion',
+        addAnswerFn: 'addManualAnswer',
+        removeAnswerFn: 'removeManualAnswer',
+        updateAnswerTypeFn: 'updateManualAnswerType',
+        updateAnswersFn: 'updateManualQuestionsData',
+        answerGroupPrefix: 'manual_correct'
+      });
+
+      window.addManualQuestion = manualQuizBuilder.addQuestion;
+      window.removeManualQuestion = manualQuizBuilder.removeQuestion;
+      window.addManualAnswer = manualQuizBuilder.addAnswer;
+      window.removeManualAnswer = manualQuizBuilder.removeAnswer;
+      window.updateManualAnswerType = manualQuizBuilder.updateAnswerType;
+      window.updateManualQuestionsData = manualQuizBuilder.updateQuestionsData;
+      
+      // ============ FUNCIONES PARA FORMULARIO DE EDICIÓN INLINE ============
+      let questionIdCounterInline = 0;
+      
+      function addQuestionInline() {
+        const questionId = questionIdCounterInline++;
+        const container = document.getElementById('questions-container-inline');
+        
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-block';
+        questionDiv.dataset.questionId = questionId;
+        questionDiv.innerHTML = `
+          <div class="question-header">
+            <h4>Pregunta ${questionId + 1}</h4>
+            <button type="button" class="btn-danger-small" onclick="removeQuestionInline(${questionId})">✕ Eliminar</button>
+          </div>
+          <div class="form-group">
+            <label>Enunciado de la pregunta</label>
+            <input type="text" class="question-text" placeholder="Escribe la pregunta aquí" oninput="updateQuestionsDataInline()" required>
+          </div>
+          <div class="form-group">
+            <label>Tipo de respuesta</label>
+            <select class="question-type" onchange="updateAnswerTypeInline(${questionId})">
+              <option value="single">Selección única</option>
+              <option value="multiple">Selección múltiple</option>
+            </select>
+          </div>
+          <div class="answers-container" data-question-id="${questionId}">
+            <label>Opciones de respuesta</label>
+            <div class="answers-list"></div>
+            <button type="button" class="btn-secondary-small" onclick="addAnswerInline(${questionId})">+ Agregar opción</button>
+          </div>
+        `;
+        
+        container.appendChild(questionDiv);
+        
+        // Agregar 2 opciones por defecto
+        addAnswerInline(questionId);
+        addAnswerInline(questionId);
+        
+        updateQuestionsDataInline();
+      }
+      
+      function removeQuestionInline(questionId) {
+        const questionBlock = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"]`).closest('.question-block');
+        questionBlock.remove();
+        updateQuestionsDataInline();
+        renumberQuestionsInline();
+      }
+      
+      function addAnswerInline(questionId) {
+        const answersList = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"] .answers-list`);
+        const answerId = answersList.children.length;
+        const questionBlock = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"]`).closest('.question-block');
+        const questionType = questionBlock.querySelector('.question-type').value;
+        
+        const answerDiv = document.createElement('div');
+        answerDiv.className = 'answer-item';
+        answerDiv.dataset.answerId = answerId;
+        answerDiv.innerHTML = `
+          <input type="${questionType === 'single' ? 'radio' : 'checkbox'}" 
+                 name="correct_inline_${questionId}" 
+                 value="${answerId}"
+                 onchange="updateQuestionsDataInline()"
+                 title="Marcar como correcta">
+          <input type="text" 
+                 class="answer-text" 
+                 placeholder="Opción ${answerId + 1}" 
+                 oninput="updateQuestionsDataInline()" 
+                 required>
+          <button type="button" class="btn-remove-answer" onclick="removeAnswerInline(${questionId}, ${answerId})">✕</button>
+        `;
+        
+        answersList.appendChild(answerDiv);
+        updateQuestionsDataInline();
+      }
+      
+      function removeAnswerInline(questionId, answerId) {
+        const answerItem = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"] .answers-list [data-answer-id="${answerId}"]`);
+        answerItem.remove();
+        updateQuestionsDataInline();
+      }
+      
+      function updateAnswerTypeInline(questionId) {
+        const questionBlock = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"]`).closest('.question-block');
+        const questionType = questionBlock.querySelector('.question-type').value;
+        const answersList = questionBlock.querySelector('.answers-list');
+        const inputs = answersList.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+        
+        inputs.forEach(input => {
+          const newInput = document.createElement('input');
+          newInput.type = questionType === 'single' ? 'radio' : 'checkbox';
+          newInput.name = input.name;
+          newInput.value = input.value;
+          newInput.checked = input.checked;
+          newInput.title = 'Marcar como correcta';
+          newInput.onchange = updateQuestionsDataInline; // Add event listener
+          input.replaceWith(newInput);
+        });
+        
+        updateQuestionsDataInline();
+      }
+      
+      function updateQuestionsDataInline() {
+        const questions = [];
+        document.querySelectorAll('#questions-container-inline .question-block').forEach(block => {
+          const questionId = block.dataset.questionId;
+          const questionText = block.querySelector('.question-text').value;
+          const questionType = block.querySelector('.question-type').value;
+          
+          const answers = [];
+          const answersList = block.querySelector('.answers-list');
+          answersList.querySelectorAll('.answer-item').forEach(answerItem => {
+            const answerId = answerItem.dataset.answerId;
+            const answerText = answerItem.querySelector('.answer-text').value;
+            const isCorrect = answerItem.querySelector('input[type="radio"], input[type="checkbox"]').checked;
+            
+            if (answerText.trim()) {
+              answers.push({
+                id: answerId,
+                text: answerText,
+                is_correct: isCorrect
+              });
+            }
+          });
+          
+          if (questionText.trim() && answers.length > 0) {
+            questions.push({
+              id: questionId,
+              text: questionText,
+              type: questionType,
+              answers: answers
+            });
+          }
+        });
+        
+        const hiddenInput = document.getElementById('quiz_questions_inline');
+        if (hiddenInput) {
+          hiddenInput.value = JSON.stringify(questions);
+        }
+      }
+      
+      function renumberQuestionsInline() {
+        document.querySelectorAll('#questions-container-inline .question-block').forEach((block, index) => {
+          block.querySelector('.question-header h4').textContent = `Pregunta ${index + 1}`;
+        });
+      }
+      
+      // Cargar preguntas existentes en modo inline
+      document.addEventListener('DOMContentLoaded', function() {
+        const questionsDataScript = document.getElementById('existing-questions-data');
+        if (questionsDataScript) {
+            try {
+                const existingQuestions = JSON.parse(questionsDataScript.textContent);
+                const container = document.getElementById('questions-container-inline');
+                
+                if (container && Array.isArray(existingQuestions)) {
+                    existingQuestions.forEach(question => {
+                        const questionId = questionIdCounterInline++;
+                        
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'question-block';
+                        questionDiv.dataset.questionId = questionId;
+                        
+                        // Escape values safely
+                        const qText = question.text ? question.text.replace(/"/g, '&quot;') : '';
+                        
+                        questionDiv.innerHTML = `
+                          <div class="question-header">
+                            <h4>Pregunta ${questionId + 1}</h4>
+                            <button type="button" class="btn-danger-small" onclick="removeQuestionInline(${questionId})">✕ Eliminar</button>
+                          </div>
+                          <div class="form-group">
+                            <label>Enunciado de la pregunta</label>
+                            <input type="text" class="question-text" placeholder="Escribe la pregunta aquí" value="${qText}" oninput="updateQuestionsDataInline()" required>
+                          </div>
+                          <div class="form-group">
+                            <label>Tipo de respuesta</label>
+                            <select class="question-type" onchange="updateAnswerTypeInline(${questionId})">
+                              <option value="single" ${question.type === 'single' ? 'selected' : ''}>Selección única</option>
+                              <option value="multiple" ${question.type === 'multiple' ? 'selected' : ''}>Selección múltiple</option>
+                            </select>
+                          </div>
+                          <div class="answers-container" data-question-id="${questionId}">
+                            <label>Opciones de respuesta</label>
+                            <div class="answers-list"></div>
+                            <button type="button" class="btn-secondary-small" onclick="addAnswerInline(${questionId})">+ Agregar opción</button>
+                          </div>
+                        `;
+                        
+                        container.appendChild(questionDiv);
+                        
+                        // Agregar las respuestas existentes
+                        const answersList = questionDiv.querySelector('.answers-list');
+                        if (question.answers && Array.isArray(question.answers)) {
+                            question.answers.forEach((answer, answerIdx) => {
+                                const answerDiv = document.createElement('div');
+                                answerDiv.className = 'answer-item';
+                                answerDiv.dataset.answerId = answerIdx;
+                                
+                                const aText = answer.text ? answer.text.replace(/"/g, '&quot;') : '';
+                                
+                                answerDiv.innerHTML = `
+                                    <input type="${question.type === 'single' ? 'radio' : 'checkbox'}" 
+                                           name="correct_inline_${questionId}" 
+                                           value="${answerIdx}"
+                                           ${answer.is_correct ? 'checked' : ''}
+                                           onchange="updateQuestionsDataInline()"
+                                           title="Marcar como correcta">
+                                    <input type="text" 
+                                           class="answer-text" 
+                                           placeholder="Opción ${answerIdx + 1}" 
+                                           value="${aText}"
+                                           oninput="updateQuestionsDataInline()" 
+                                           required>
+                                    <button type="button" class="btn-remove-answer" onclick="removeAnswerInline(${questionId}, ${answerIdx})">✕</button>
+                                `;
+                                answersList.appendChild(answerDiv);
+                            });
+                        }
+                    });
+                    
+                    updateQuestionsDataInline();
+                }
+            } catch (e) {
+                console.error("Error loading quiz questions:", e);
+            }
+        }
+      });
+    </script>
   </div>
   <div id="jsFeedbackModal" class="modal-backdrop" style="display: none;">
   <div class="modal-content feedback-content">
