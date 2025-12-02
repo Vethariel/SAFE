@@ -290,6 +290,8 @@ def take_exam(request, content_pk):
         return HttpResponse(status=403)
 
     questions = normalize_exam_questions(content.exam)
+    for q in questions:
+        q["result"] = None
     if request.method == "GET":
         return render(
             request,
@@ -306,6 +308,9 @@ def take_exam(request, content_pk):
         submitted[qid] = request.POST.getlist(f"q-{qid}")
 
     correct_count, total, results = evaluate_exam_submission(questions, submitted)
+    result_map = {r.get("question_id"): r for r in results if r.get("question_id")}
+    for q in questions:
+        q["result"] = result_map.get(q.get("id"))
 
     # Registrar progreso si hay inscripción
     try:
@@ -424,6 +429,7 @@ def evaluate_exam_submission(questions, submitted_answers):
 
         results.append(
             {
+                "question_id": qid,
                 "question": q.get("text", ""),
                 "selected": list(selected),
                 "correct_ids": list(correct_ids),
