@@ -245,6 +245,52 @@
                         </div>
 
                             {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
+                               <form method="post" enctype="multipart/form-data" action="{% url 'content_update' selected_content.pk %}" class="content-form inline-editor" style="margin-top: 16px; border-top: 1px solid var(--safe-border); padding-top: 16px;">
+                                {% csrf_token %}
+                                <div class="form-grid">
+                                  <div class="form-field form-field-title">
+                                    <label>Título</label>
+                                    {{ content_edit_form.title }}
+                                  </div>
+                                  <div class="form-field form-field-type">
+                                    <label>Tipo de bloque</label>
+                                    <input type="text" value="{{ content.get_block_type_display }}" disabled class="input" style="background: #f3f4f6; color: #6b7280; cursor: not-allowed;">
+                                    <input type="hidden" name="block_type" value="{{ content.block_type }}">
+                                  </div>
+                                  <div class="form-field checkbox-field form-field-inline">
+                                    <label class="checkbox-label">{{ content_edit_form.is_mandatory }} <span>Obligatorio</span></label>
+                                  </div>
+                                  <div class="form-field form-field-full">
+                                    <label>Texto</label>
+                                    {{ content_edit_form.description }}
+                                  </div>
+                                  
+                                  {% if content.block_type != 'quiz' and content.block_type != 'text' %}
+                                    <div class="form-field form-field-full file-field">
+                                      <label>Archivo Actual</label>
+                                      {% if content.material and content.material.file %}
+                                        <div style="margin-bottom: 8px; font-size: 0.9em;">
+                                            <a href="{{ content.material.file.url }}" target="_blank">{{ content.material.file.name }}</a>
+                                        </div>
+                                      {% else %}
+                                        <div style="margin-bottom: 8px; font-size: 0.9em; color: #666;">Sin archivo</div>
+                                      {% endif %}
+                                      
+                                      <label>Reemplazar Archivo</label>
+                                      {{ material_edit_form.expected_type }}
+                                      <div class="file-input-wrapper">{{ material_edit_form.file }}</div>
+                                    </div>
+                                  {% endif %}
+
+                                  {% if content.block_type == 'quiz' %}
+                                      <input type="hidden" name="quiz_questions" id="quiz_questions_inline" value="[]">
+                                  {% endif %}
+                                </div>
+                                <div class="content-form__actions">
+                                  <button type="submit" class="btn-primary">Guardar cambios</button>
+                                  <button type="submit" form="delete-form-{{ selected_content.pk }}" class="btn-danger" onclick="return confirm('¿Eliminar este contenido?')">Eliminar</button>
+                                </div>
+                               </form>
                                <form id="delete-form-{{ selected_content.pk }}" method="post" action="{% url 'content_delete' selected_content.pk %}" style="display: none;">{% csrf_token %}</form>
                             {% endif %}
                           </article>
@@ -1020,7 +1066,16 @@
         const questionsDataScript = document.getElementById('existing-questions-data');
         if (questionsDataScript) {
             try {
-                const existingQuestions = JSON.parse(questionsDataScript.textContent);
+                let existingQuestions = JSON.parse(questionsDataScript.textContent);
+                // Handle potential double-encoding
+                if (typeof existingQuestions === 'string') {
+                    try {
+                        existingQuestions = JSON.parse(existingQuestions);
+                    } catch (e) {
+                        console.warn("Could not parse double-encoded JSON, using string as is.");
+                    }
+                }
+
                 const container = document.getElementById('questions-container-inline');
                 
                 if (container && Array.isArray(existingQuestions)) {
@@ -1121,12 +1176,30 @@
 <script>
   function toggleExamPanel() {
     const panel = document.getElementById('create-exam-panel');
+    const contentsPanel = document.querySelector('.contents-panel');
+
     if (panel.style.display === 'none' || panel.style.display === '') {
       panel.style.display = 'block';
+      if (contentsPanel) contentsPanel.style.display = 'none';
+      
       // Scroll to panel
       panel.scrollIntoView({ behavior: 'smooth' });
+      
+      // Opcional: Quitar visualmente la selección del módulo actual
+      document.querySelectorAll('.module-card.selected').forEach(card => {
+          card.dataset.wasSelected = "true";
+          card.classList.remove('selected');
+      });
+
     } else {
       panel.style.display = 'none';
+      if (contentsPanel) contentsPanel.style.display = 'block';
+      
+      // Restaurar selección
+      document.querySelectorAll('.module-card[data-was-selected="true"]').forEach(card => {
+          card.classList.add('selected');
+          delete card.dataset.wasSelected;
+      });
     }
   }
 </script>
