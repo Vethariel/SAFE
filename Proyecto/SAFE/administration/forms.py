@@ -1,5 +1,5 @@
 from django import forms
-from courses.models import Course, Module, Content, Material, Exam, Assignment
+from courses.models import Course, Module, Content, Material
 from learning_paths.models import LearningPath
 from django.core.validators import FileExtensionValidator
 

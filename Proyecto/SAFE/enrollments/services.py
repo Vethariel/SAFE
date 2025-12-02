@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from typing import List, Optional
 from decimal import Decimal
 
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, Prefetch
 from django.utils import timezone
 
 from accounts.models import AppUser
-from courses.models import Course, Content, Module
+from courses.models import Course, Content
 from courses.services import get_ordered_modules
 from enrollments.models import ContentProgress, CourseInscription
 from learning_paths.models import LearningPath

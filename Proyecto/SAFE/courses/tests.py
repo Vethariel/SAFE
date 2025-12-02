@@ -4,7 +4,6 @@ from courses.views import parse_evaluacion, is_txt_file
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from .forms import QuestionUploadForm
 from .models import Content, Course, Module
 from .services import (
     append_content_to_module,

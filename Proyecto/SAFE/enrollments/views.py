@@ -8,19 +8,23 @@ from django.utils import timezone
 
 from accounts.models import AppUser
 from courses.models import Course
-from enrollments.models import CourseInscription, PathInscription
-from . import models
+from enrollments.models import CourseInscription
 
 from enrollments.services import get_courses_for_user
 from learning_paths.models import LearningPath
-from enrollments.services import _build_catalog_card_for_course, _build_inscriptions_prefetch
+from enrollments.services import (
+    _build_catalog_card_for_course,
+    _build_inscriptions_prefetch,
+)
 
 
 @login_required
 def home(request):
     """Dashboard de aprendizaje (My learning)."""
-    # Rutas primero
-    paths = LearningPath.objects.all().order_by("-created_at")
+    # Rutas primero: solo las que el usuario está inscrito
+    paths = LearningPath.objects.filter(inscriptions__app_user=request.user).order_by(
+        "-created_at"
+    )
 
     # Cursos visibles para el usuario con datos de tarjeta estilo catálogo
     courses_qs = (
@@ -34,7 +38,9 @@ def home(request):
     prefetch = _build_inscriptions_prefetch(request.user)
     if prefetch is not None:
         courses_qs = courses_qs.prefetch_related(prefetch)
-    course_cards = [_build_catalog_card_for_course(course, request.user) for course in courses_qs]
+    course_cards = [
+        _build_catalog_card_for_course(course, request.user) for course in courses_qs
+    ]
 
     return render(
         request,

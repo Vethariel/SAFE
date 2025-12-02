@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import HttpResponse
 from django.urls import reverse
 from django.db import transaction
+from django.contrib import messages
+import json
+
 from courses.models import Course, Module, Content, Exam
 from courses.services import (
     append_content_to_module,
@@ -15,63 +17,15 @@ from courses.services import (
     rebuild_content_chain,
     rebuild_module_chain,
 )
-from administration.services import change_role
-from learning_paths.models import LearningPath, CourseInPath
-from accounts.models import AppUser
-from django.contrib import messages
-from .forms import (
+from administration.forms import (
     CourseForm,
     ModuleForm,
     ContentForm,
     MaterialForm,
-    LearningPathForm,
     ExamUploadForm,
 )
-from courses.views import parse_evaluacion
-from teams.models import Team, TeamUser
-
-
-@login_required
-def admin_panel(request):
-    if request.user.role != "analistaTH":
-        return HttpResponse("No tienes permisos", status=403)
-
-    active_tab = request.GET.get("tab", "cursos")
-
-    courses = Course.objects.all().order_by("-created_at")
-    selected_course = None
-    selected_module = None
-
-    course_id = request.GET.get("course")
-    if course_id:
-        selected_course = get_object_or_404(Course, id=course_id)
-
-        module_id = request.GET.get("module")
-        if module_id:
-            selected_module = get_object_or_404(
-                Module, id=module_id, course=selected_course
-            )
-
-    learning_paths = LearningPath.objects.all().order_by("-created_at")
-
-    usuarios = AppUser.objects.all().order_by("id")
-
-    # Equipos
-    teams = Team.objects.all().select_related("supervisor").prefetch_related("members")
-    supervisors = AppUser.objects.filter(role="supervisor")
-
-    context = {
-        "active_tab": active_tab,
-        "courses": courses,
-        "selected_course": selected_course,
-        "selected_module": selected_module,
-        "learning_paths": learning_paths,
-        "usuarios": usuarios,
-        "role_choices": AppUser.UserRole.choices,
-        "teams": teams,
-        "supervisors": supervisors,
-    }
-    return render(request, "administration/admin_panel.html", context)
+from courses.utils import parse_evaluacion
+from learning_paths.models import LearningPath
 
 
 @login_required
@@ -193,19 +147,6 @@ def course_update(request, pk):
         "administration/course_form.html",
         {"form": form, "title": "Editar Curso", "course": course},
     )
-
-
-@login_required
-@require_POST
-def user_change_role(request, user_id):
-    target_user = get_object_or_404(AppUser, pk=user_id)
-    new_role = request.POST.get("role", "")
-
-    success = change_role(request.user, target_user, new_role)
-    if not success:
-        return HttpResponse("No tienes permisos para realizar esta acción", status=403)
-
-    return redirect(reverse("admin_panel") + "?tab=usuarios")
 
 
 @login_required
@@ -331,8 +272,6 @@ def content_create(request, module_pk):
 
         if block_type == Content.BlockType.QUIZ:
             # Obtener las preguntas del formulario
-            import json
-
             quiz_questions = request.POST.get("quiz_questions", "[]")
             try:
                 questions = json.loads(quiz_questions)
@@ -435,8 +374,6 @@ def content_update(request, content_pk):
         updated_content.content_type = Content.ContentType.MATERIAL
 
         if block_type == Content.BlockType.QUIZ:
-            import json
-
             quiz_questions = request.POST.get("quiz_questions", "[]")
 
             if not content.exam:
@@ -553,300 +490,6 @@ def content_delete(request, content_pk):
 
 
 @login_required
-def path_create(request):
-    if request.method == "POST":
-        form = LearningPathForm(request.POST, request.FILES)
-        if form.is_valid():
-            path = form.save(commit=False)
-            path.created_by = request.user
-            path.save()
-            messages.success(request, f"Ruta '{path.name}' creada exitosamente")
-            return redirect("path_detail", pk=path.pk)
-    else:
-        form = LearningPathForm()
-
-    return render(
-        request,
-        "administration/path_form.html",
-        {"form": form, "title": "Crear Ruta de Aprendizaje"},
-    )
-
-
-@login_required
-def path_detail(request, pk):
-    learning_path = get_object_or_404(LearningPath, pk=pk)
-
-    courses_in_path = CourseInPath.objects.filter(
-        learning_path=learning_path
-    ).select_related("course")
-
-    ordered_courses = []
-    if courses_in_path.exists():
-        current = courses_in_path.filter(previous_course__isnull=True).first()
-
-        next_map = {cip.course_id: cip for cip in courses_in_path}  # pyright: ignore[reportAttributeAccessIssue]
-
-        while current:
-            ordered_courses.append(current)
-            if current.next_course_id:  # pyright: ignore[reportAttributeAccessIssue]
-                next_course_id = current.next_course_id  # pyright: ignore[reportAttributeAccessIssue]
-
-                current = next_map.get(next_course_id)
-            else:
-                current = None
-
-    existing_course_ids = [cip.course.id for cip in courses_in_path]  # pyright: ignore[reportAttributeAccessIssue]
-    available_courses = Course.objects.exclude(id__in=existing_course_ids).order_by(
-        "name"
-    )
-
-    return render(
-        request,
-        "administration/path_detail.html",
-        {
-            "learning_path": learning_path,
-            "ordered_courses": ordered_courses,
-            "available_courses": available_courses,
-        },
-    )
-
-
-@login_required
-def path_update(request, pk):
-    path = get_object_or_404(LearningPath, pk=pk)
-    if request.method == "POST":
-        form = LearningPathForm(request.POST, request.FILES, instance=path)
-        if form.is_valid():
-            new_status = form.cleaned_data.get("status")
-
-            if new_status == LearningPath.PathStatus.ACTIVE:
-                inactive_courses = (
-                    Course.objects.filter(in_paths__learning_path=path)
-                    .exclude(status=Course.CourseStatus.ACTIVE)
-                    .distinct()
-                )
-
-                if inactive_courses.exists():
-                    if request.POST.get("confirm_activate_courses") == "true":
-                        inactive_courses.update(status=Course.CourseStatus.ACTIVE)
-                    else:
-                        messages.warning(
-                            request,
-                            "Esta ruta contiene cursos inactivos. Debes activarlos primero.",
-                        )
-                        return render(
-                            request,
-                            "administration/path_form.html",
-                            {
-                                "form": form,
-                                "title": "Editar Ruta",
-                                "learning_path": path,
-                                "inactive_courses": inactive_courses,
-                            },
-                        )
-
-            form.save()
-            messages.success(request, "Ruta actualizada exitosamente")
-            return redirect("path_detail", pk=pk)
-    else:
-        form = LearningPathForm(instance=path)
-
-    return render(
-        request,
-        "administration/path_form.html",
-        {"form": form, "title": "Editar Ruta", "learning_path": path},
-    )
-
-
-@login_required
-def path_delete(request, pk):
-    path = get_object_or_404(LearningPath, pk=pk)
-    if request.method == "POST":
-        path.delete()
-        messages.success(request, "Ruta eliminada exitosamente")
-        return redirect("admin_panel")
-    return redirect("admin_panel")
-
-
-@login_required
-@require_POST
-def path_add_course(request, pk):
-    learning_path = get_object_or_404(LearningPath, pk=pk)
-    course_id = request.POST.get("course_id")
-    course = get_object_or_404(Course, pk=course_id)
-
-    # Check if course is already in path
-    if CourseInPath.objects.filter(learning_path=learning_path, course=course).exists():
-        messages.error(request, "El curso ya está en la ruta.")
-        return redirect("path_detail", pk=pk)
-
-    with transaction.atomic():
-        # Find the last course in the path
-        last_cip = CourseInPath.objects.filter(
-            learning_path=learning_path, next_course__isnull=True
-        ).first()
-
-        # Create new CIP
-        new_cip = CourseInPath(
-            learning_path=learning_path,
-            course=course,
-            previous_course=last_cip.course if last_cip else None,
-            next_course=None,
-        )
-        new_cip.save()
-
-        # Update the old last course to point to the new one
-        if last_cip:
-            last_cip.next_course = course
-            last_cip.save()
-
-    messages.success(request, "Curso agregado a la ruta.")
-    return redirect("path_detail", pk=pk)
-
-
-@login_required
-@require_POST
-def path_remove_course(request, pk, course_id):
-    learning_path = get_object_or_404(LearningPath, pk=pk)
-    cip_to_remove = get_object_or_404(
-        CourseInPath, learning_path=learning_path, course_id=course_id
-    )
-
-    with transaction.atomic():
-        prev_course = cip_to_remove.previous_course
-        next_course = cip_to_remove.next_course
-
-        # Update previous CIP if it exists
-        if prev_course:
-            prev_cip = CourseInPath.objects.get(
-                learning_path=learning_path, course=prev_course
-            )
-            prev_cip.next_course = next_course
-            prev_cip.save()
-
-        # Update next CIP if it exists
-        if next_course:
-            next_cip = CourseInPath.objects.get(
-                learning_path=learning_path, course=next_course
-            )
-            next_cip.previous_course = prev_course
-            next_cip.save()
-
-        cip_to_remove.delete()
-
-    messages.success(request, "Curso eliminado de la ruta.")
-    return redirect("path_detail", pk=pk)
-
-
-def _swap_with_previous(learning_path, current_cip):
-    """
-    Swaps current_cip with its predecessor.
-    Assumes current_cip.previous_course is NOT None.
-    """
-    prev_course = current_cip.previous_course
-    prev_cip = CourseInPath.objects.get(learning_path=learning_path, course=prev_course)
-
-    pre_prev_course = prev_cip.previous_course
-    next_course = current_cip.next_course
-
-    # 1. Update current_cip pointers
-    current_cip.previous_course = pre_prev_course
-    current_cip.next_course = prev_course
-
-    # 2. Update prev_cip pointers
-    prev_cip.previous_course = current_cip.course
-    prev_cip.next_course = next_course
-
-    # 3. Update pre_prev_cip (if exists)
-    if pre_prev_course:
-        pre_prev_cip = CourseInPath.objects.get(
-            learning_path=learning_path, course=pre_prev_course
-        )
-        pre_prev_cip.next_course = current_cip.course
-        pre_prev_cip.save()
-
-    # 4. Update next_cip (if exists)
-    if next_course:
-        next_cip = CourseInPath.objects.get(
-            learning_path=learning_path, course=next_course
-        )
-        next_cip.previous_course = prev_cip.course
-        next_cip.save()
-
-    current_cip.save()
-    prev_cip.save()
-
-
-@login_required
-@require_POST
-def path_move_up(request, pk, course_id):
-    learning_path = get_object_or_404(LearningPath, pk=pk)
-    current_cip = get_object_or_404(
-        CourseInPath, learning_path=learning_path, course_id=course_id
-    )
-
-    if not current_cip.previous_course:
-        messages.warning(request, "El curso ya está al inicio.")
-        return redirect("path_detail", pk=pk)
-
-    with transaction.atomic():
-        _swap_with_previous(learning_path, current_cip)
-
-    messages.success(request, "Orden actualizado.")
-    return redirect("path_detail", pk=pk)
-
-
-@login_required
-@require_POST
-def path_move_down(request, pk, course_id):
-    learning_path = get_object_or_404(LearningPath, pk=pk)
-    current_cip = get_object_or_404(
-        CourseInPath, learning_path=learning_path, course_id=course_id
-    )
-
-    if not current_cip.next_course:
-        messages.warning(request, "El curso ya está al final.")
-        return redirect("path_detail", pk=pk)
-
-    # Moving A down is same as moving B (A's next) up
-    next_cip = CourseInPath.objects.get(
-        learning_path=learning_path, course=current_cip.next_course
-    )
-
-    with transaction.atomic():
-        _swap_with_previous(learning_path, next_cip)
-
-    messages.success(request, "Orden actualizado.")
-    return redirect("path_detail", pk=pk)
-
-
-@login_required
-def user_delete(request, pk):
-    """
-    Elimina un usuario basado en su ID (pk).
-    Solo permite acceso a usuarios logueados (idealmente validar rol también).
-    """
-    # Buscamos el usuario o devolvemos error 404 si no existe
-    user_to_delete = get_object_or_404(AppUser, pk=pk)
-
-    # Protección: Evitar que el usuario se elimine a sí mismo
-    if user_to_delete == request.user:
-        messages.error(request, "No puedes eliminar tu propio usuario.")
-        return redirect("admin_panel")  # Redirige de vuelta al panel
-
-    if request.method == "POST":
-        username = user_to_delete.username
-        user_to_delete.delete()
-        messages.success(request, f"Usuario '{username}' eliminado correctamente.")
-
-    # Redirigimos al panel de administración (asegúrate que 'admin_panel' sea el name en administration/urls.py)
-    return redirect("admin_panel")
-
-
-# administration/views.py
-
-
-@login_required
 @require_POST
 def create_exam_for_course(request, course_pk):
     """
@@ -865,15 +508,12 @@ def create_exam_for_course(request, course_pk):
         },
     )
 
-    if exam_module.contents.filter(content_type=Content.ContentType.EXAM).exists():
-        messages.error(request, "Ya existe un examen para este curso.")
-        return redirect("course_detail", pk=course.pk)
-
     form = ExamUploadForm(request.POST, request.FILES)
 
     if form.is_valid():
         uploaded_file = request.FILES["file"]
         title = form.cleaned_data["title"]
+        difficulty = form.cleaned_data["difficulty"]
 
         # 2. Validación de extensión (Backend)
         if not uploaded_file.name.lower().endswith(".txt"):
@@ -915,181 +555,47 @@ def create_exam_for_course(request, course_pk):
                     }
                 )
 
-            # 4. Crear objeto Exam
-            exam = Exam.objects.create(
-                questions=questions,
-                total_questions=len(questions),
-                # difficulty=difficulty  <-- Si tu modelo Exam tiene este campo
+            with transaction.atomic():
+                # 4. Crear el Exam con las preguntas parseadas
+                exam = Exam.objects.create(
+                    questions=questions,
+                    total_questions=len(questions),
+                    passing_score=60,
+                    max_tries=3,
+                )
+
+                # 5. Crear el Content vinculado al módulo "Examen"
+                Content.objects.create(
+                    module=exam_module,
+                    title=title,
+                    description=(
+                        f"Examen importado desde archivo: {uploaded_file.name}. "
+                        f"Dificultad: {difficulty}. "
+                        f"Preguntas: {len(questions)}."
+                    ),
+                    content_type=Content.ContentType.EXAM,
+                    block_type=Content.BlockType.QUIZ,
+                    exam=exam,
+                    is_mandatory=True,
+                )
+
+            messages.success(
+                request,
+                f"Examen '{title}' creado desde '{uploaded_file.name}' con {len(questions)} pregunta(s).",
             )
 
-            # 5. Crear Content tipo QUIZ/EXAM en el módulo
-            Content.objects.create(
-                module=exam_module,
-                title=title,
-                description=f"Examen generado desde {uploaded_file.name}",
-                block_type=Content.BlockType.QUIZ,
-                content_type=Content.ContentType.EXAM,
-                exam=exam,
-                order=exam_module.contents.count() + 1,
-            )
-
-            messages.success(request, "Examen creado exitosamente desde archivo.")
-
+        except ValueError as e:
+            # Errores de formato de parse_evaluacion
+            messages.error(request, f"Error en el formato del archivo: {str(e)}")
         except Exception as e:
-            messages.error(request, f"Error al procesar el archivo: {str(e)}")
+            messages.error(request, f"Error al procesar el examen: {str(e)}")
 
     else:
-        # Form inválido
         for field, errors in form.errors.items():
             for error in errors:
                 messages.error(request, f"{field}: {error}")
 
-    return redirect("course_detail", pk=course.pk)
-
-
-@login_required
-@require_POST
-def create_exam_manual(request, course_pk):
-    course = get_object_or_404(Course, pk=course_pk)
-
-    # 1. Buscar o Crear el módulo "Examen"
-    exam_module, created = Module.objects.get_or_create(
-        course=course,
-        name="Examen",
-        defaults={
-            "description": "Módulo dedicado a las evaluaciones del curso.",
-        },
+    # Redirigir al curso, abriendo específicamente el módulo de exámenes
+    return redirect(
+        reverse("course_detail", kwargs={"pk": course.pk}) + f"?module={exam_module.pk}"
     )
-
-    if exam_module.contents.filter(content_type=Content.ContentType.EXAM).exists():
-        messages.error(request, "Ya existe un examen para este curso.")
-        return redirect("course_detail", pk=course.pk)
-
-    # 2. Crear el contenido (Quiz)
-    import json
-
-    title = request.POST.get("title")
-    description = request.POST.get("description")
-    is_mandatory = request.POST.get("is_mandatory") == "on"
-    quiz_questions = request.POST.get("quiz_questions", "[]")
-
-    try:
-        questions = json.loads(quiz_questions)
-    except json.JSONDecodeError:
-        messages.error(request, "Error al procesar las preguntas del cuestionario.")
-        return redirect("course_detail", pk=course.pk)
-
-    if not title:
-        messages.error(request, "El título es obligatorio.")
-        return redirect("course_detail", pk=course.pk)
-
-    # Create Exam object
-    exam = Exam.objects.create(questions=questions, total_questions=len(questions))
-
-    # Create Content object
-    Content.objects.create(
-        module=exam_module,
-        title=title,
-        description=description or "",
-        block_type=Content.BlockType.QUIZ,
-        content_type=Content.ContentType.EXAM,
-        is_mandatory=is_mandatory,
-        exam=exam,
-        order=exam_module.contents.count() + 1,
-    )
-
-    messages.success(request, "Examen creado exitosamente.")
-    return redirect("course_detail", pk=course.pk)
-
-
-# --- GESTIÓN DE EQUIPOS ---
-
-
-@login_required
-@require_POST
-def team_create(request):
-    if request.user.role != "analistaTH":
-        return HttpResponse("No tienes permisos", status=403)
-
-    name = request.POST.get("name")
-    description = request.POST.get("description")
-    supervisor_id = request.POST.get("supervisor_id")
-
-    supervisor = None
-    if supervisor_id:
-        supervisor = get_object_or_404(AppUser, pk=supervisor_id)
-
-    Team.objects.create(name=name, description=description, supervisor=supervisor)
-
-    messages.success(request, "Equipo creado exitosamente.")
-    return redirect(reverse("admin_panel") + "?tab=equipos")
-
-
-@login_required
-@require_POST
-def team_update(request, pk):
-    if request.user.role != "analistaTH":
-        return HttpResponse("No tienes permisos", status=403)
-
-    team = get_object_or_404(Team, pk=pk)
-
-    team.name = request.POST.get("name")
-    team.description = request.POST.get("description")
-    supervisor_id = request.POST.get("supervisor_id")
-
-    if supervisor_id:
-        team.supervisor = get_object_or_404(AppUser, pk=supervisor_id)
-    else:
-        team.supervisor = None
-
-    team.save()
-
-    messages.success(request, "Equipo actualizado exitosamente.")
-    return redirect(reverse("admin_panel") + "?tab=equipos")
-
-
-@login_required
-@require_POST
-def team_delete(request, pk):
-    if request.user.role != "analistaTH":
-        return HttpResponse("No tienes permisos", status=403)
-
-    team = get_object_or_404(Team, pk=pk)
-    team.delete()
-
-    messages.success(request, "Equipo eliminado exitosamente.")
-    return redirect(reverse("admin_panel") + "?tab=equipos")
-
-
-@login_required
-@require_POST
-def team_add_member(request, pk):
-    if request.user.role != "analistaTH":
-        return HttpResponse("No tienes permisos", status=403)
-
-    team = get_object_or_404(Team, pk=pk)
-    user_id = request.POST.get("user_id")
-    user = get_object_or_404(AppUser, pk=user_id)
-
-    if TeamUser.objects.filter(team=team, app_user=user).exists():
-        messages.warning(request, "El usuario ya es miembro del equipo.")
-    else:
-        TeamUser.objects.create(team=team, app_user=user)
-        messages.success(request, "Miembro añadido exitosamente.")
-
-    return redirect(reverse("admin_panel") + "?tab=equipos")
-
-
-@login_required
-@require_POST
-def team_remove_member(request, pk, user_id):
-    if request.user.role != "analistaTH":
-        return HttpResponse("No tienes permisos", status=403)
-
-    team = get_object_or_404(Team, pk=pk)
-    user = get_object_or_404(AppUser, pk=user_id)
-
-    TeamUser.objects.filter(team=team, app_user=user).delete()
-
-    messages.success(request, "Miembro eliminado del equipo.")
-    return redirect(reverse("admin_panel") + "?tab=equipos")

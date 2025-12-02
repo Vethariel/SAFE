@@ -1,8 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from .models import AppUser
 from accounts.views import unique_email
-from accounts.models import AppUser
 import unittest
 
 '''

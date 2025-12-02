@@ -17,7 +17,7 @@ from enrollments.services import (
 )
 from .services import get_ordered_contents, get_ordered_modules
 from .forms import QuestionUploadForm
-from .models import Content, Course, Exam, Material, Module
+from .models import Content, Course, Exam
 
 
 def _to_json_safe(value):

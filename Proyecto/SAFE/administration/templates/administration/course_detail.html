@@ -111,6 +111,12 @@
             {{ module_form.name }}
             <button type="submit" class="btn-primary" title="Agregar módulo">+</button>
           </form>
+
+          {% if not exam_module %}
+            <button type="button" class="btn-secondary" style="width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="toggleExamPanel()">
+              <span>📝</span> Crear Examen
+            </button>
+          {% endif %}
         </section>
 
         <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
@@ -184,6 +190,9 @@
                                   <div class="quiz-edit-inline" id="quiz-editor-{{ content.pk }}">
                                     <div id="questions-container-inline"></div>
                                     <button type="button" class="btn-secondary-small" onclick="addQuestionInline()" style="margin-top: 16px;">+ Agregar pregunta</button>
+                                    {% if content.exam and content.exam.questions %}
+                                        {{ content.exam.questions|json_script:"existing-questions-data" }}
+                                    {% endif %}
                                   </div>
                                 {% elif content.exam and content.exam.questions %}
                                     {% for question in content.exam.questions %}
@@ -243,7 +252,7 @@
                           <div class="empty-state-small">No hay contenidos en este módulo.</div>
                         {% endfor %}
 
-                        {% if not selected_content %}
+                        {% if not selected_content and selected_module.name|lower != 'examen' %}
                           <div class="add-content-wrapper">
                             {% if module_contents %}
                               <button type="button" class="btn-primary add-content-toggle" data-create-toggle>+ Agregar contenido</button>
@@ -314,7 +323,7 @@
               {% endif %}
             </section>
 
-                        <section class="create-exam-panel" style="background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
+            <section class="create-exam-panel" id="create-exam-panel" style="display: none; background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
                 
                 <div class="section-header" style="margin-bottom: 20px;">
                   <h2 class="section-title" style="font-size: 20px; font-weight: 600; color: var(--safe-dark);">Crear Examen</h2>
@@ -372,8 +381,7 @@
                 </div>
 
                 <div class="exam-mode-panel" data-exam-mode="manual">
-                  {% if exam_module %}
-                    <form method="post" action="{% url 'content_create' exam_module.pk %}" class="content-form exam-manual-form" data-create-form>
+                    <form method="post" action="{% url 'create_exam_manual' course.pk %}" class="content-form exam-manual-form" data-create-form>
                       {% csrf_token %}
                       <input type="hidden" name="block_type" value="quiz">
                       <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -402,9 +410,6 @@
                         <button type="submit" class="btn-primary">Crear examen</button>
                       </div>
                     </form>
-                  {% else %}
-                    <div class="empty-state-small">Crea primero el módulo "Examen" para registrar evaluaciones manuales.</div>
-                  {% endif %}
                 </div>
             </section>
         </div>
@@ -1112,5 +1117,18 @@
 
   </div>
 </div>
+
+<script>
+  function toggleExamPanel() {
+    const panel = document.getElementById('create-exam-panel');
+    if (panel.style.display === 'none' || panel.style.display === '') {
+      panel.style.display = 'block';
+      // Scroll to panel
+      panel.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      panel.style.display = 'none';
+    }
+  }
+</script>
 {% endblock %}
 

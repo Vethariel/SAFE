@@ -343,7 +343,7 @@ def change_password(request):
         
         return redirect("profile")
         
-    except Exception as e:
+    except Exception:
         messages.error(request, "Error al cambiar la contraseña.")
         return redirect("profile")
     
