@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {{ title }} - SAFE Academy
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'administration/css/course_form.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="form-container">
+    <!-- Header -->
+    <div class="form-header">
+      <h1>{{ title }}</h1>
+      <p>
+        {% if course %}
+          Edita la información del curso
+        {% else %}
+          Completa los datos del nuevo curso
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Show form errors -->
+        {% if form.errors %}
+          <div class="alert-error">
+            <strong>⚠️ Por favor corrige los siguientes errores:</strong>
+            <ul>
+              {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                  <li>{{ field }}: {{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% if messages %}
+          {% for message in messages %}
+            {% if 'warning' in message.tags %}
+              <div class="alert-warning" style="background-color: #fff3cd; color: #856404; padding: 1rem; border: 1px solid #ffeeba; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                <strong>⚠️ Atención:</strong> {{ message }}
+                {% if affected_paths %}
+                  <ul style="margin-top: 0.5rem;">
+                    {% for path in affected_paths %}
+                      <li>{{ path.name }}</li>
+                    {% endfor %}
+                  </ul>
+                  <div style="margin-top: 1rem;">
+                    <input type="hidden" name="confirm_deactivate_paths" value="true" />
+                    <button type="submit" class="btn-primary" style="background-color: #856404; border-color: #856404;">Desactivar rutas y guardar</button>
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        <!-- Nombre del curso -->
+        <div class="form-group">
+          <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="field-error">{{ form.name.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}
+            <div class="field-error">{{ form.description.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Duration y Status (2 columnas) -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="{{ form.duration_hours.id_for_label }}">{{ form.duration_hours.label }}</label>
+            {{ form.duration_hours }}
+            {% if form.duration_hours.errors %}
+              <div class="field-error">{{ form.duration_hours.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+            {{ form.status }}
+            <div class="field-help">
+              🟢 Activo: Visible para todos<br />
+              🟡 Borrador: Solo administradores<br />
+              🔴 Archivado: No visible
+            </div>
+            {% if form.status.errors %}
+              <div class="field-error">{{ form.status.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Imagen de portada -->
+        <div class="form-group">
+          <label for="{{ form.header_img.id_for_label }}">{{ form.header_img.label }}</label>
+
+          {% if course and course.header_img %}
+            <div class="current-image-preview">
+              <img src="{{ course.header_img.url }}" alt="Portada actual" class="preview-img" />
+              <p class="preview-label">Imagen actual</p>
+            </div>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="header_img-clear" id="header_img-clear_id" />
+                <span>Eliminar imagen actual</span>
+              </label>
+            </div>
+          {% endif %}
+
+          <div class="file-input-only">{{ form.header_img }}</div>
+          <div class="field-help">
+            {% if course and course.header_img %}
+              Sube una nueva imagen para reemplazar la actual
+            {% else %}
+              Sube una imagen para la portada del curso
+            {% endif %}
+          </div>
+          {% if form.header_img.errors %}
+            <div class="field-error">{{ form.header_img.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          {% if course %}
+            <a href="{% url 'course_detail' course.pk %}" class="btn-ghost">Cancelar</a>
+          {% else %}
+            <a href="{% url 'admin_panel' %}" class="btn-ghost">Cancelar</a>
+          {% endif %}
+          <button type="submit" class="btn-primary">
+            {% if course %}
+              Guardar cambios
+            {% else %}
+              Crear curso
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

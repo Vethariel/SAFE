@@ -32,29 +32,13 @@ echo "==========================================="
 echo "Esperando a que las migraciones terminen..."
 echo "==========================================="
 
-MAX_ATTEMPTS=20
-ATTEMPT=0
+APPS=("accounts" "teams" "courses" "learning_paths" "enrollments" "notifications" "administration")
 
-while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-  if docker compose logs web | grep -q "Starting development server"; then
-    echo "Django está listo"
-    break
-  fi
-  
-  if docker compose logs web | grep -q "Error"; then
-    echo "ERROR: Se detectó un error en las migraciones, revisa los logs"
-    exit 1
-  fi
-  
-  echo "  ...aún migrando, reintentando en 2s (intento $((ATTEMPT+1))/$MAX_ATTEMPTS)"
-  sleep 2
-  ATTEMPT=$((ATTEMPT+1))
+for app in "${APPS[@]}"; do
+  docker compose exec -T web python manage.py makemigrations "$app" || true
 done
 
-if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-  echo "TIMEOUT: Las migraciones tardaron demasiado, revisa los logs"
-  exit 1
-fi
+docker compose exec -T web python manage.py migrate --noinput
 
 echo ""
 echo "=========================================="

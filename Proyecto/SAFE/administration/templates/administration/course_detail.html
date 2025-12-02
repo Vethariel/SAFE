@@ -1,0 +1,1207 @@
+{% extends 'base.html' %}
+{% load static admin_extras %}
+
+{% block title %}
+  {{ course.name }} - SAFE Academy
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'administration/css/course_detail.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="{% url 'admin_panel' %}?tab=cursos">← Volver a Administración</a>
+    </div>
+
+    <div class="course-summary">
+      <div class="course-header">
+        <div class="course-header-content">
+          <h1>{{ course.name }}</h1>
+          <span class="status-badge status-{{ course.status }}">{{ course.get_status_display }}</span>
+        </div>
+        <div class="course-header-actions">
+          <a href="{% url 'course_update' course.pk %}" class="btn-secondary">Editar Metadatos</a>
+          <form method="post" action="{% url 'course_delete' course.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger" onclick="return confirm('¿Eliminar {{ course.name }}?')">Eliminar Curso</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">Descripción</span>
+            <p class="info-value">{{ course.description|default:'Sin descripción' }}</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">Duración</span>
+            <span class="info-value">{{ course.duration_hours|default:'--' }} horas</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Módulos</span>
+            <span class="info-value">{{ modules|length }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Creado por</span>
+            <span class="info-value">{{ course.created_by.username|default:'--' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Fecha de creación</span>
+            <span class="info-value">{{ course.created_at|date:'d/m/Y' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container course-body">
+      <div class="course-layout" style="display: flex; flex-wrap: wrap; gap: 18px;">
+        
+        <section class="modules-panel" style="flex: 0 0 320px; max-width: 340px;">
+          <div class="section-header">
+            <h2 class="section-title">Módulos</h2>
+          </div>
+
+          <div class="modules-list" id="modules-list">
+            {% for module in modules %}
+              <div class="module-card {% if selected_module and selected_module.pk == module.pk %}selected{% endif %}">
+                <div class="module-header">
+                  <a href="{% url 'course_detail' course.pk %}?module={{ module.pk }}" class="module-card-link" aria-label="Ver módulo {{ module.name }}">
+                    <div class="module-info">
+                      <h3 class="module-title">{{ forloop.counter }}. {{ module.name }}</h3>
+                      <p class="module-description">{{ module.contents.count }} contenido(s)</p>
+                    </div>
+                  </a>
+                  <div class="module-actions">
+                    <div class="module-order-controls">
+                      {% if not forloop.first %}
+                        <form method="post" action="{% url 'module_move' module.pk 'up' %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ module.pk }}">
+                          <button type="submit" class="order-btn" title="Mover arriba" aria-label="Mover módulo hacia arriba">&uarr;</button>
+                        </form>
+                      {% endif %}
+                      {% if not forloop.last %}
+                        <form method="post" action="{% url 'module_move' module.pk 'down' %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ module.pk }}">
+                          <button type="submit" class="order-btn" title="Mover abajo" aria-label="Mover módulo hacia abajo">&darr;</button>
+                        </form>
+                      {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'module_delete' module.pk %}" class="module-delete-form" onsubmit="return confirm('¿Eliminar {{ module.name }}?');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-danger module-delete-btn" aria-label="Eliminar módulo {{ module.name }}">X</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <div class="empty-state-small">No hay módulos aún.</div>
+            {% endfor %}
+          </div>
+
+          <form method="post" action="{% url 'module_create' course.pk %}" class="inline-module-form">
+            {% csrf_token %}
+            {{ module_form.name }}
+            <button type="submit" class="btn-primary" title="Agregar módulo">+</button>
+          </form>
+
+          {% if not exam_module %}
+            <button type="button" class="btn-secondary" style="width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="toggleExamPanel()">
+              <span>📝</span> Crear Examen
+            </button>
+          {% endif %}
+        </section>
+
+        <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+            <section class="contents-panel">
+              <div class="section-header">
+                <h2 class="section-title">Contenidos del módulo</h2>
+              </div>
+
+              {% if selected_module %}
+                  <div class="content-columns">
+                    <div class="content-carousel inline-editing">
+                      <div class="carousel-header">
+                        <p class="carousel-count">{{ module_contents|length }} bloque(s)</p>
+                        <div class="carousel-controls">
+                          <button type="button" class="btn btn-secondary" data-carousel-btn="prev">▲</button>
+                          <button type="button" class="btn btn-secondary" data-carousel-btn="next">▼</button>
+                        </div>
+                      </div>
+                      
+                      <div class="content-notebook" id="content-notebook">
+                        {% for content in module_contents %}
+                          <article id="content-block-{{ content.pk }}" class="content-block content-block--{{ content.block_type }} {% if selected_content and selected_content.pk == content.pk %}is-active{% endif %}">
+                            <div class="content-block__header">
+                              <div>
+                                <p class="content-block__order">Bloque {{ forloop.counter }}</p>
+                                <h3 class="content-block__title">{{ content.title }}</h3>
+                              </div>
+                              <div class="content-block__tags">
+                                <span class="content-type-pill">
+                                  {% if content.block_type == 'text' %}Texto
+                                  {% elif content.block_type == 'image' %}Imagen
+                                  {% elif content.block_type == 'video' %}Video
+                                  {% elif content.block_type == 'pdf' %}PDF
+                                  {% elif content.block_type == 'quiz' %}Cuestionario
+                                  {% else %}Contenido{% endif %}
+                                </span>
+                                {% if content.is_mandatory %}
+                                  <span class="mandatory-chip">Obligatorio</span>
+                                {% endif %}
+                              </div>
+                            </div>
+
+                            <div class="content-block__body">
+                              {% if content.block_type == 'text' %}
+                                <div class="content-text">{{ content.description|linebreaks }}</div>
+                              {% elif content.block_type == 'image' %}
+                                {% if content.material and content.material.file %}
+                                  <img src="{{ content.material.file.url }}" alt="{{ content.title }}" class="content-image" loading="lazy" />
+                                {% else %}
+                                  <p class="content-empty">Imagen no disponible.</p>
+                                {% endif %}
+                              {% elif content.block_type == 'video' %}
+                                {% if content.material and content.material.file %}
+                                  <video controls class="content-video">
+                                    <source src="{{ content.material.file.url }}" type="video/{{ content.material.type|default:'mp4' }}" />
+                                  </video>
+                                {% else %}
+                                  <p class="content-empty">Video no disponible.</p>
+                                {% endif %}
+                              {% elif content.block_type == 'pdf' %}
+                                {% if content.material and content.material.file %}
+                                  <a href="{{ content.material.file.url }}" target="_blank" rel="noopener" download class="download-button">
+                                    <span class="download-icon">📄</span>
+                                    <span>{{ content.material.file.name|filename }}</span>
+                                  </a>
+                                {% else %}
+                                  <p class="content-empty">Archivo PDF no disponible.</p>
+                                {% endif %}
+                              {% elif content.block_type == 'quiz' %}
+                                {% if selected_content and selected_content.pk == content.pk %}
+                                  <div class="quiz-edit-inline" id="quiz-editor-{{ content.pk }}">
+                                    <div id="questions-container-inline"></div>
+                                    <button type="button" class="btn-secondary-small" onclick="addQuestionInline()" style="margin-top: 16px;">+ Agregar pregunta</button>
+                                    {% if content.exam and content.exam.questions %}
+                                        {{ content.exam.questions|json_script:"existing-questions-data" }}
+                                    {% endif %}
+                                  </div>
+                                {% elif content.exam and content.exam.questions %}
+                                    {% for question in content.exam.questions %}
+                                      <div class="quiz-question-preview">
+                                        <div class="question-preview-header">
+                                          <h5>Pregunta {{ forloop.counter }}</h5>
+                                          <small class="question-type-label">{% if question.type == 'single' %}Selección única{% else %}Selección múltiple{% endif %}</small>
+                                        </div>
+                                        <p class="question-text">{{ question.text }}</p>
+                                        <div class="answers-preview">
+                                          {% for answer in question.answers %}
+                                            <div class="answer-preview {% if answer.is_correct %}correct-answer{% endif %}">
+                                              <span class="answer-marker">{% if answer.is_correct %}✓{% else %}○{% endif %}</span>
+                                              <span>{{ answer.text }}</span>
+                                            </div>
+                                          {% endfor %}
+                                        </div>
+                                      </div>
+                                    {% endfor %}
+                                {% else %}
+                                  <p class="content-empty">Crea un cuestionario para este bloque.</p>
+                                {% endif %}
+                              {% endif %}
+                        </div>
+
+                        <div class="content-block__actions">
+                          <div class="content-order-controls">
+                            {% if not forloop.first %}
+                              <form method="post" action="{% url 'content_move' content.pk 'up' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}">
+                                <button type="submit" class="order-btn" title="Mover arriba" aria-label="Mover contenido hacia arriba">&uarr;</button>
+                              </form>
+                            {% endif %}
+                            {% if not forloop.last %}
+                              <form method="post" action="{% url 'content_move' content.pk 'down' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}">
+                                <button type="submit" class="order-btn" title="Mover abajo" aria-label="Mover contenido hacia abajo">&darr;</button>
+                              </form>
+                            {% endif %}
+                          </div>
+                          <div class="content-block__actions-edit">
+                            {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
+                              <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}#content-block-{{ content.pk }}" class="btn-tertiary btn-small">Cerrar</a>
+                            {% else %}
+                              <a href="{% url 'course_detail' course.pk %}?module={{ selected_module.pk }}&content={{ content.pk }}#content-block-{{ content.pk }}" class="btn-secondary btn-small">Editar</a>
+                            {% endif %}
+                          </div>
+                        </div>
+
+                            {% if selected_content and selected_content.pk == content.pk and content_edit_form %}
+                               <form method="post" enctype="multipart/form-data" action="{% url 'content_update' selected_content.pk %}" class="content-form inline-editor" style="margin-top: 16px; border-top: 1px solid var(--safe-border); padding-top: 16px;">
+                                {% csrf_token %}
+                                <div class="form-grid">
+                                  <div class="form-field form-field-title">
+                                    <label>Título</label>
+                                    {{ content_edit_form.title }}
+                                  </div>
+                                  <div class="form-field form-field-type">
+                                    <label>Tipo de bloque</label>
+                                    <input type="text" value="{{ content.get_block_type_display }}" disabled class="input" style="background: #f3f4f6; color: #6b7280; cursor: not-allowed;">
+                                    <input type="hidden" name="block_type" value="{{ content.block_type }}">
+                                  </div>
+                                  <div class="form-field checkbox-field form-field-inline">
+                                    <label class="checkbox-label">{{ content_edit_form.is_mandatory }} <span>Obligatorio</span></label>
+                                  </div>
+                                  <div class="form-field form-field-full">
+                                    <label>Texto</label>
+                                    {{ content_edit_form.description }}
+                                  </div>
+                                  
+                                  {% if content.block_type != 'quiz' and content.block_type != 'text' %}
+                                    <div class="form-field form-field-full file-field">
+                                      <label>Archivo Actual</label>
+                                      {% if content.material and content.material.file %}
+                                        <div style="margin-bottom: 8px; font-size: 0.9em;">
+                                            <a href="{{ content.material.file.url }}" target="_blank">{{ content.material.file.name }}</a>
+                                        </div>
+                                      {% else %}
+                                        <div style="margin-bottom: 8px; font-size: 0.9em; color: #666;">Sin archivo</div>
+                                      {% endif %}
+                                      
+                                      <label>Reemplazar Archivo</label>
+                                      {{ material_edit_form.expected_type }}
+                                      <div class="file-input-wrapper">{{ material_edit_form.file }}</div>
+                                    </div>
+                                  {% endif %}
+
+                                  {% if content.block_type == 'quiz' %}
+                                      <input type="hidden" name="quiz_questions" id="quiz_questions_inline" value="[]">
+                                  {% endif %}
+                                </div>
+                                <div class="content-form__actions">
+                                  <button type="submit" class="btn-primary">Guardar cambios</button>
+                                  <button type="submit" form="delete-form-{{ selected_content.pk }}" class="btn-danger" onclick="return confirm('¿Eliminar este contenido?')">Eliminar</button>
+                                </div>
+                               </form>
+                               <form id="delete-form-{{ selected_content.pk }}" method="post" action="{% url 'content_delete' selected_content.pk %}" style="display: none;">{% csrf_token %}</form>
+                            {% endif %}
+                          </article>
+                        {% empty %}
+                          <div class="empty-state-small">No hay contenidos en este módulo.</div>
+                        {% endfor %}
+
+                        {% if not selected_content and selected_module.name|lower != 'examen' %}
+                          <div class="add-content-wrapper">
+                            {% if module_contents %}
+                              <button type="button" class="btn-primary add-content-toggle" data-create-toggle>+ Agregar contenido</button>
+                              <article class="content-block content-block--new is-collapsed" id="content-block-new" data-create-panel>
+                            {% else %}
+                              <h4 class="inspector-subtitle" style="margin-bottom: 16px;">Agregar el primer bloque</h4>
+                              <article class="content-block content-block--new" id="content-block-new" data-create-panel>
+                            {% endif %}
+                              <div class="content-block__header">
+                                <div>
+                                  <p class="content-block__order">{% if module_contents %}Nuevo bloque{% else %}Bloque 1{% endif %}</p>
+                                  <h3 class="content-block__title">Formulario de creación</h3>
+                                </div>
+                              </div>
+                              <form method="post" enctype="multipart/form-data" action="{% url 'content_create' selected_module.pk %}" class="content-form inline-editor" data-create-form>
+                                {% csrf_token %}
+                                <div class="form-grid">
+                                  <div class="form-field form-field-title">
+                                    <label>Título</label>
+                                    {{ content_form.title }}
+                                  </div>
+                                  <div class="form-field form-field-type">
+                                    <label>Tipo de bloque</label>
+                                    {% if selected_module and selected_module.name|lower == 'examen' %}
+                                      <div class="chip chip-static">Cuestionario</div>
+                                      <input type="hidden" name="block_type" value="quiz">
+                                    {% else %}
+                                      {{ content_form.block_type }}
+                                    {% endif %}
+                                  </div>
+                                  <div class="form-field checkbox-field form-field-inline">
+                                    <label class="checkbox-label">{{ content_form.is_mandatory }} <span>Obligatorio</span></label>
+                                  </div>
+                                  <div class="form-field form-field-full">
+                                    <label>Texto</label>
+                                    {{ content_form.description }}
+                                  </div>
+                                  {% if not selected_module or selected_module.name|lower != 'examen' %}
+                                    <div class="form-field form-field-full file-field" data-file-field>
+                                      <label>Archivo (imagen/video/pdf)</label>
+                                      {{ material_form.expected_type }}
+                                      <div class="file-input-wrapper">{{ material_form.file }}</div>
+                                      <small class="field-hint">El tipo se determina automáticamente.</small>
+                                    </div>
+                                  {% endif %}
+                                  <div class="form-field form-field-full quiz-editor" data-quiz-editor style="display: {% if selected_module and selected_module.name|lower == 'examen' %}block{% else %}none{% endif %};">
+                                    <label>Preguntas del cuestionario</label>
+                                    <div id="questions-container"></div>
+                                    <button type="button" class="btn-secondary" onclick="addQuestion()">+ Agregar pregunta</button>
+                                    <input type="hidden" name="quiz_questions" id="quiz_questions" value="[]">
+                                  </div>
+                                </div>
+                                <div class="content-form__actions">
+                                  <button type="submit" class="btn-primary">{% if module_contents %}Crear bloque{% else %}Agregar contenido{% endif %}</button>
+                                </div>
+                              </form>
+                            </article>
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+
+              {% else %}
+                <div class="empty-state-small" style="margin-bottom: 0;">
+                    Selecciona un módulo a la izquierda para ver sus contenidos.
+                </div>
+              {% endif %}
+            </section>
+
+            <section class="create-exam-panel" id="create-exam-panel" style="display: none; background: var(--safe-card); border: 1px solid var(--safe-border); border-radius: 18px; padding: 24px;">
+                
+                <div class="section-header" style="margin-bottom: 20px;">
+                  <h2 class="section-title" style="font-size: 20px; font-weight: 600; color: var(--safe-dark);">Crear Examen</h2>
+                </div>
+
+                <div class="exam-mode-buttons">
+                  <button type="button" class="exam-mode-btn is-active" data-exam-mode-target="upload">Crear examen con TXT</button>
+                  <button type="button" class="exam-mode-btn" data-exam-mode-target="manual">Crear examen manualmente</button>
+                </div>
+
+                <div class="exam-mode-panel is-active" data-exam-mode="upload">
+                  <form method="post" enctype="multipart/form-data" action="{% url 'create_exam_for_course' course.pk %}" class="content-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                      <div class="form-field" style="grid-column: 1 / 2;">
+                        <label class="label" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Título del Examen</label>
+                        <input type="text" name="title" required placeholder="Ej. Evaluación Final" style="width: 100%; padding: 10px 12px; border: 1px solid var(--safe-border); border-radius: 10px; font-size: 14px;">
+                      </div>
+
+                      <div class="form-field" style="grid-column: 2 / 3;">
+                        <label class="label" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Nivel de Dificultad</label>
+                        <select name="difficulty" style="width: 100%; padding: 10px 12px; border: 1px solid var(--safe-border); border-radius: 10px; font-size: 14px;">
+                          <option value="facil">Fácil</option>
+                          <option value="media" selected>Media</option>
+                          <option value="dificil">Difícil</option>
+                        </select>
+                      </div>
+
+                      <div class="form-field form-field-full" style="grid-column: 1 / -1; margin-top: 16px;">
+                        <label class="label" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Archivo de preguntas (.txt)</label>
+                        <small class="field-hint">
+                          Formato: líneas con <code>Q:ID|Texto de la pregunta</code> y
+                          <code>O:ID_OPCION|Texto opción|1/0</code>, separando preguntas por líneas en blanco.
+                        </small>
+                        
+                        <input type="file" name="file" id="exam-file-input" accept=".txt" style="display: none;" onchange="updateFileName(this)">
+                        
+                        <label for="exam-file-input" class="drop-zone" id="exam-drop-zone" style="background: #fff; border: 2px dashed var(--safe-border); border-radius: 14px; padding: 30px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: all 0.2s;">
+                          <div class="drop-zone-icon" style="font-size: 32px; margin-bottom: 8px;">📄</div>
+                          <span id="file-name-text" style="color: var(--safe-ink2); font-size: 14px;">
+                            Arrastra tu archivo <strong>.txt</strong> aquí o haz clic para buscar
+                          </span>
+                          <button type="button" class="btn-secondary btn-small" style="margin-top: 12px; pointer-events: none; background: var(--safe-card-alt); color: var(--safe-dark); border: 1px solid var(--safe-border); border-radius: 10px; padding: 6px 12px; font-weight: 600; font-size: 13px;">
+                            Seleccionar archivo
+                          </button>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="content-form__actions" style="display: flex; justify-content: flex-end; margin-top: 24px;">
+                      <button type="submit" class="btn-primary" style="background: var(--safe-gold); color: var(--safe-dark); border: none; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; width: 100%; max-width: 200px;">Crear examen</button>
+                    </div>
+                  </form>
+                </div>
+
+                <div class="exam-mode-panel" data-exam-mode="manual">
+                    <form method="post" action="{% url 'create_exam_manual' course.pk %}" class="content-form exam-manual-form" data-create-form>
+                      {% csrf_token %}
+                      <input type="hidden" name="block_type" value="quiz">
+                      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-field form-field-title">
+                          <label>Título</label>
+                          <input type="text" name="title" placeholder="Ej. Evaluación manual" required>
+                        </div>
+                        <div class="form-field checkbox-field form-field-inline">
+                          <label class="checkbox-label">
+                            <input type="checkbox" name="is_mandatory">
+                            <span>Obligatorio</span>
+                          </label>
+                        </div>
+                        <div class="form-field form-field-full">
+                          <label>Descripción</label>
+                          <textarea name="description" rows="4" placeholder="Describe brevemente el examen."></textarea>
+                        </div>
+                        <div class="form-field form-field-full quiz-editor" data-quiz-editor style="display: block;">
+                          <label>Preguntas del cuestionario</label>
+                          <div id="manual-questions-container"></div>
+                          <button type="button" class="btn-secondary" onclick="addManualQuestion()">+ Agregar pregunta</button>
+                          <input type="hidden" name="quiz_questions" id="manual_quiz_questions" value="[]">
+                        </div>
+                      </div>
+                      <div class="content-form__actions">
+                        <button type="submit" class="btn-primary">Crear examen</button>
+                      </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+      </div>
+  </div>
+
+  <div id="jsFeedbackModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-content feedback-content">
+      <div class="feedback-icon icon-warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3 class="feedback-title">Atención</h3>
+      <p class="feedback-text" id="jsFeedbackText">Mensaje por defecto</p>
+      <button type="button" class="btn btn-primary btn-wide" onclick="closeJsModal()">Aceptar</button>
+    </div>
+  </div>
+
+  <div id="delete-modal" class="confirm-overlay" style="display:none;">
+    <div class="confirm-card">
+      <div class="warning-icon">⚠️</div>
+      <h1 class="confirm-title">¿Eliminar?</h1>
+      <div id="delete-entity-info" class="course-info">
+        <h2 id="delete-entity-name" class="course-name"></h2>
+        <div id="delete-entity-meta" class="course-meta"></div>
+      </div>
+      <div class="warning-box">
+        <strong>⚠️ Esta acción no se puede deshacer</strong>
+        <p>Al eliminar esto, se eliminarán todos los elementos asociados.</p>
+      </div>
+      <form id="delete-form" method="post" action="">
+        {% csrf_token %}
+        <div class="form-actions">
+          <button type="button" id="delete-cancel" class="btn-secondary">← Cancelar</button>
+          <button type="submit" class="btn-danger">🗑️ Sí, eliminar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // 1. Lógica del Modal Alerta + Dropzone
+    function showJsError(message) {
+      const modal = document.getElementById('jsFeedbackModal');
+      const textElement = document.getElementById('jsFeedbackText');
+      if (modal && textElement) {
+        textElement.textContent = message;
+        modal.style.display = 'flex';
+      }
+    }
+
+    function closeJsModal() {
+      const modal = document.getElementById('jsFeedbackModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function updateFileName(input) {
+      const textSpan = document.getElementById('file-name-text');
+      
+      if (input.files && input.files.length > 0) {
+        const file = input.files[0];
+        const fileName = file.name.toLowerCase();
+
+        // VALIDACIÓN
+        if (!fileName.endsWith('.txt')) {
+          showJsError("El tipo de archivo no es válido. Solo puede subir archivos .txt");
+          input.value = ''; 
+          textSpan.innerHTML = `Arrastra tu archivo <strong>.txt</strong> aquí o haz clic para buscar`;
+          textSpan.style.color = "#6b7280";
+          return;
+        }
+
+        // ÉXITO
+        textSpan.innerHTML = "Archivo seleccionado: <strong style='color: var(--safe-gold);'>" + file.name + "</strong>";
+        textSpan.style.color = "var(--safe-ink)";
+      }
+    }
+
+    // Inicializar Dropzone del Examen
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('exam-drop-zone');
+        if (dropZone) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+              dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.style.backgroundColor = '#fefce8';
+                dropZone.style.borderColor = '#d4af37';
+              }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+              dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.style.backgroundColor = '#fff';
+                dropZone.style.borderColor = '#e5e7eb';
+              }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+              e.preventDefault();
+              const dt = e.dataTransfer;
+              const files = dt.files;
+              const input = document.getElementById('exam-file-input');
+              
+              if (files.length > 0) {
+                  input.files = files;
+                  updateFileName(input);
+              }
+            });
+        }
+
+        const examModeButtons = document.querySelectorAll('[data-exam-mode-target]');
+        const examPanels = document.querySelectorAll('[data-exam-mode]');
+        if (examModeButtons.length > 0 && examPanels.length > 0) {
+          examModeButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const target = btn.dataset.examModeTarget;
+              examModeButtons.forEach((button) => {
+                button.classList.toggle('is-active', button === btn);
+              });
+              examPanels.forEach((panel) => {
+                panel.classList.toggle('is-active', panel.dataset.examMode === target);
+              });
+            });
+          });
+        }
+    });
+
+    // 2. Lógica existente (Quiz, Blocks, Notebook)
+    function validateQuiz(form) {
+      const blockTypeInput = form.querySelector('[name="block_type"]')
+      if (!blockTypeInput || blockTypeInput.value !== 'quiz') return true;
+
+      const questionsInput = form.querySelector('input[name="quiz_questions"]')
+      if (!questionsInput || !questionsInput.value) return true;
+
+      try {
+        const questions = JSON.parse(questionsInput.value)
+        if (questions.length === 0) {
+           alert('El cuestionario debe tener al menos una pregunta.')
+           return false
+        }
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i]
+          const hasCorrect = q.answers && q.answers.some(a => a.is_correct)
+          if (!hasCorrect) {
+            alert(`La pregunta "${q.text}" no tiene ninguna respuesta correcta marcada.\nPor favor, selecciona al menos una opción correcta.`)
+            return false
+          }
+        }
+      } catch (e) {
+        console.error('Error validando quiz:', e)
+      }
+      return true
+    }
+
+    function validateFileForBlockType(form) {
+      const blockTypeSelect = form.querySelector('[name="block_type"]')
+      const fileInput = form.querySelector('[name="file"]')
+      if (!blockTypeSelect) return true;
+      const blockType = blockTypeSelect.value
+      
+      const validExtensions = {
+        image: ['jpg', 'jpeg'],
+        video: ['mp4'],
+        pdf: ['pdf']
+      }
+      
+      if (!validExtensions[blockType]) return true;
+      
+      let extension = null
+      if (fileInput && fileInput.files.length > 0) {
+        extension = fileInput.files[0].name.toLowerCase().split('.').pop()
+      } else {
+        const existingFileLink = form.querySelector('a[href*="/media/"]')
+        if (existingFileLink) {
+          extension = existingFileLink.href.toLowerCase().split('.').pop().split('?')[0]
+        }
+      }
+      
+      if (extension && !validExtensions[blockType].includes(extension)) {
+        const expectedTypes = validExtensions[blockType].join(', ').toUpperCase()
+        alert(`Error: El archivo debe ser de tipo ${expectedTypes}.\nEl archivo actual es ${extension.toUpperCase()}.`)
+        return false
+      }
+      return true
+    }
+    
+    document.addEventListener('DOMContentLoaded', function () {
+      const contentForms = document.querySelectorAll('[data-create-form], [data-content-form], form[action*="content_update"]')
+      contentForms.forEach((form) => {
+        form.addEventListener('submit', function (e) {
+          if (!validateFileForBlockType(this)) { e.preventDefault(); return }
+          if (!validateQuiz(this)) { e.preventDefault() }
+        })
+      })
+    
+      const notebook = document.getElementById('content-notebook')
+      if (notebook) {
+          const activeBlock = notebook.querySelector('.content-block.is-active')
+          if (activeBlock) activeBlock.scrollIntoView({ block: 'start', behavior: 'smooth' })
+          
+          const buttons = document.querySelectorAll('[data-carousel-btn]')
+          const step = () => {
+            const block = notebook.querySelector('.content-block')
+            return block ? block.offsetHeight + parseInt(window.getComputedStyle(block).marginBottom || 0, 10) : 200
+          }
+          buttons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const direction = btn.dataset.carouselBtn === 'next' ? 1 : -1
+              notebook.scrollBy({ top: direction * step(), behavior: 'smooth' })
+            })
+          })
+      }
+    
+      const createToggle = document.querySelector('[data-create-toggle]')
+      const createPanel = document.querySelector('[data-create-panel]')
+      if (createToggle && createPanel) {
+        createToggle.addEventListener('click', () => {
+          createPanel.classList.toggle('is-collapsed')
+          const expanded = !createPanel.classList.contains('is-collapsed')
+          createToggle.textContent = expanded ? 'Cerrar formulario' : '+ Agregar contenido'
+          if (expanded) createPanel.scrollIntoView({ block: 'start', behavior: 'smooth' })
+        })
+      }
+      
+      const blockTypeSelects = document.querySelectorAll('[name="block_type"]');
+      blockTypeSelects.forEach(select => {
+        const form = select.closest('form');
+        if (!form) return;
+        
+        const fileField = form.querySelector('[data-file-field]');
+        const quizEditor = form.querySelector('[data-quiz-editor]');
+        
+        function updateFieldsVisibility() {
+          const blockType = select.value;
+          if (blockType === 'quiz') {
+            if (fileField) fileField.style.display = 'none';
+            if (quizEditor) quizEditor.style.display = 'block';
+          } else if (['image', 'video', 'pdf'].includes(blockType)) {
+            if (fileField) fileField.style.display = 'block';
+            if (quizEditor) quizEditor.style.display = 'none';
+          } else {
+            if (fileField) fileField.style.display = 'none';
+            if (quizEditor) quizEditor.style.display = 'none';
+          }
+        }
+        select.addEventListener('change', updateFieldsVisibility);
+        updateFieldsVisibility();
+      });
+      
+      {% if selected_content and selected_content.block_type == 'quiz' and selected_content.exam and selected_content.exam.questions %}
+        setTimeout(function() {
+          const existingQuestions = {{ selected_content.exam.questions|safe }};
+          const container = document.getElementById('questions-container-inline'); 
+          if (container && existingQuestions && existingQuestions.length > 0) {
+             // Lógica de repoblado omitida por brevedad, se mantiene la original
+          }
+        }, 100);
+      {% endif %}
+    })
+      
+      // Variables globales para el quiz editor
+      function createQuizBuilder(config) {
+        let questionIdCounter = 0;
+        const getContainer = () => document.getElementById(config.containerId);
+        const getHiddenInput = () => document.getElementById(config.hiddenInputId);
+
+        function addQuestion() {
+          const container = getContainer();
+          if (!container) return;
+          const questionId = questionIdCounter++;
+          const questionDiv = document.createElement('div');
+          questionDiv.className = 'question-block';
+          questionDiv.dataset.questionId = questionId;
+          questionDiv.innerHTML = `
+            <div class="question-header">
+              <h4>Pregunta ${questionId + 1}</h4>
+              <button type="button" class="btn-danger-small" onclick="${config.removeQuestionFn}(${questionId})">✕ Eliminar</button>
+            </div>
+            <div class="form-group">
+              <label>Enunciado de la pregunta</label>
+              <input type="text" class="question-text" placeholder="Escribe la pregunta aquí" required>
+            </div>
+            <div class="form-group">
+              <label>Tipo de respuesta</label>
+              <select class="question-type" onchange="${config.updateAnswerTypeFn}(${questionId})">
+                <option value="single">Selección única</option>
+                <option value="multiple">Selección múltiple</option>
+              </select>
+            </div>
+            <div class="answers-container" data-question-id="${questionId}">
+              <label>Opciones de respuesta</label>
+              <div class="answers-list"></div>
+              <button type="button" class="btn-secondary-small" onclick="${config.addAnswerFn}(${questionId})">+ Agregar opción</button>
+            </div>
+          `;
+          container.appendChild(questionDiv);
+          addAnswer(questionId);
+          addAnswer(questionId);
+          updateQuestionsData();
+        }
+
+        function removeQuestion(questionId) {
+          const container = getContainer();
+          if (!container) return;
+          const questionBlock = container.querySelector(`[data-question-id="${questionId}"]`);
+          if (questionBlock) {
+            questionBlock.remove();
+            updateQuestionsData();
+          }
+        }
+
+        function addAnswer(questionId) {
+          const container = getContainer();
+          if (!container) return;
+          const questionBlock = container.querySelector(`[data-question-id="${questionId}"]`);
+          if (!questionBlock) return;
+          const answersList = questionBlock.querySelector('.answers-list');
+          const answerId = answersList.children.length;
+          const questionType = questionBlock.querySelector('.question-type').value;
+          const answerDiv = document.createElement('div');
+          answerDiv.className = 'answer-item';
+          answerDiv.dataset.answerId = answerId;
+          answerDiv.innerHTML = `
+            <input type="${questionType === 'single' ? 'radio' : 'checkbox'}" 
+                   name="${config.answerGroupPrefix}_${questionId}" 
+                   value="${answerId}"
+                   onchange="${config.updateAnswersFn}()"
+                   title="Marcar como correcta">
+            <input type="text" 
+                   class="answer-text" 
+                   placeholder="Opción ${answerId + 1}" 
+                   oninput="${config.updateAnswersFn}()" 
+                   required>
+            <button type="button" class="btn-remove-answer" onclick="${config.removeAnswerFn}(${questionId}, ${answerId})">✕</button>
+          `;
+          answersList.appendChild(answerDiv);
+          updateQuestionsData();
+        }
+
+        function removeAnswer(questionId, answerId) {
+          const container = getContainer();
+          if (!container) return;
+          const answerItem = container.querySelector(`[data-question-id="${questionId}"] .answers-list [data-answer-id="${answerId}"]`);
+          if (answerItem) {
+            answerItem.remove();
+            updateQuestionsData();
+          }
+        }
+
+        function updateAnswerType(questionId) {
+          const container = getContainer();
+          if (!container) return;
+          const questionBlock = container.querySelector(`[data-question-id="${questionId}"]`);
+          if (!questionBlock) return;
+          const questionType = questionBlock.querySelector('.question-type').value;
+          const answersList = questionBlock.querySelector('.answers-list');
+          const inputs = answersList.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+          inputs.forEach(input => {
+            const newInput = document.createElement('input');
+            newInput.type = questionType === 'single' ? 'radio' : 'checkbox';
+            newInput.name = input.name;
+            newInput.value = input.value;
+            newInput.checked = input.checked;
+            newInput.title = 'Marcar como correcta';
+            newInput.onchange = updateQuestionsData;
+            input.replaceWith(newInput);
+          });
+          updateQuestionsData();
+        }
+
+        function updateQuestionsData() {
+          const container = getContainer();
+          const hiddenInput = getHiddenInput();
+          if (!container || !hiddenInput) return;
+          const questions = [];
+          container.querySelectorAll('.question-block').forEach((block, index) => {
+            const questionId = block.dataset.questionId;
+            const questionText = block.querySelector('.question-text').value;
+            const questionType = block.querySelector('.question-type').value;
+            const answers = [];
+            const answersList = block.querySelector('.answers-list');
+            answersList.querySelectorAll('.answer-item').forEach(answerItem => {
+              const answerId = answerItem.dataset.answerId;
+              const answerText = answerItem.querySelector('.answer-text').value;
+              const isCorrect = answerItem.querySelector('input[type="radio"], input[type="checkbox"]').checked;
+              if (answerText.trim()) {
+                answers.push({
+                  id: answerId,
+                  text: answerText,
+                  is_correct: isCorrect
+                });
+              }
+            });
+            if (questionText.trim() && answers.length > 0) {
+              questions.push({
+                id: questionId,
+                text: questionText,
+                type: questionType,
+                answers: answers
+              });
+            }
+            block.querySelector('.question-header h4').textContent = `Pregunta ${index + 1}`;
+          });
+          hiddenInput.value = JSON.stringify(questions);
+        }
+
+        return {
+          addQuestion,
+          removeQuestion,
+          addAnswer,
+          removeAnswer,
+          updateAnswerType,
+          updateQuestionsData
+        };
+      }
+
+      const primaryQuizBuilder = createQuizBuilder({
+        containerId: 'questions-container',
+        hiddenInputId: 'quiz_questions',
+        addQuestionFn: 'addQuestion',
+        removeQuestionFn: 'removeQuestion',
+        addAnswerFn: 'addAnswer',
+        removeAnswerFn: 'removeAnswer',
+        updateAnswerTypeFn: 'updateAnswerType',
+        updateAnswersFn: 'updateQuestionsData',
+        answerGroupPrefix: 'correct'
+      });
+
+      window.addQuestion = primaryQuizBuilder.addQuestion;
+      window.removeQuestion = primaryQuizBuilder.removeQuestion;
+      window.addAnswer = primaryQuizBuilder.addAnswer;
+      window.removeAnswer = primaryQuizBuilder.removeAnswer;
+      window.updateAnswerType = primaryQuizBuilder.updateAnswerType;
+      window.updateQuestionsData = primaryQuizBuilder.updateQuestionsData;
+
+      const manualQuizBuilder = createQuizBuilder({
+        containerId: 'manual-questions-container',
+        hiddenInputId: 'manual_quiz_questions',
+        addQuestionFn: 'addManualQuestion',
+        removeQuestionFn: 'removeManualQuestion',
+        addAnswerFn: 'addManualAnswer',
+        removeAnswerFn: 'removeManualAnswer',
+        updateAnswerTypeFn: 'updateManualAnswerType',
+        updateAnswersFn: 'updateManualQuestionsData',
+        answerGroupPrefix: 'manual_correct'
+      });
+
+      window.addManualQuestion = manualQuizBuilder.addQuestion;
+      window.removeManualQuestion = manualQuizBuilder.removeQuestion;
+      window.addManualAnswer = manualQuizBuilder.addAnswer;
+      window.removeManualAnswer = manualQuizBuilder.removeAnswer;
+      window.updateManualAnswerType = manualQuizBuilder.updateAnswerType;
+      window.updateManualQuestionsData = manualQuizBuilder.updateQuestionsData;
+      
+      // ============ FUNCIONES PARA FORMULARIO DE EDICIÓN INLINE ============
+      let questionIdCounterInline = 0;
+      
+      function addQuestionInline() {
+        const questionId = questionIdCounterInline++;
+        const container = document.getElementById('questions-container-inline');
+        
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-block';
+        questionDiv.dataset.questionId = questionId;
+        questionDiv.innerHTML = `
+          <div class="question-header">
+            <h4>Pregunta ${questionId + 1}</h4>
+            <button type="button" class="btn-danger-small" onclick="removeQuestionInline(${questionId})">✕ Eliminar</button>
+          </div>
+          <div class="form-group">
+            <label>Enunciado de la pregunta</label>
+            <input type="text" class="question-text" placeholder="Escribe la pregunta aquí" oninput="updateQuestionsDataInline()" required>
+          </div>
+          <div class="form-group">
+            <label>Tipo de respuesta</label>
+            <select class="question-type" onchange="updateAnswerTypeInline(${questionId})">
+              <option value="single">Selección única</option>
+              <option value="multiple">Selección múltiple</option>
+            </select>
+          </div>
+          <div class="answers-container" data-question-id="${questionId}">
+            <label>Opciones de respuesta</label>
+            <div class="answers-list"></div>
+            <button type="button" class="btn-secondary-small" onclick="addAnswerInline(${questionId})">+ Agregar opción</button>
+          </div>
+        `;
+        
+        container.appendChild(questionDiv);
+        
+        // Agregar 2 opciones por defecto
+        addAnswerInline(questionId);
+        addAnswerInline(questionId);
+        
+        updateQuestionsDataInline();
+      }
+      
+      function removeQuestionInline(questionId) {
+        const questionBlock = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"]`).closest('.question-block');
+        questionBlock.remove();
+        updateQuestionsDataInline();
+        renumberQuestionsInline();
+      }
+      
+      function addAnswerInline(questionId) {
+        const answersList = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"] .answers-list`);
+        const answerId = answersList.children.length;
+        const questionBlock = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"]`).closest('.question-block');
+        const questionType = questionBlock.querySelector('.question-type').value;
+        
+        const answerDiv = document.createElement('div');
+        answerDiv.className = 'answer-item';
+        answerDiv.dataset.answerId = answerId;
+        answerDiv.innerHTML = `
+          <input type="${questionType === 'single' ? 'radio' : 'checkbox'}" 
+                 name="correct_inline_${questionId}" 
+                 value="${answerId}"
+                 onchange="updateQuestionsDataInline()"
+                 title="Marcar como correcta">
+          <input type="text" 
+                 class="answer-text" 
+                 placeholder="Opción ${answerId + 1}" 
+                 oninput="updateQuestionsDataInline()" 
+                 required>
+          <button type="button" class="btn-remove-answer" onclick="removeAnswerInline(${questionId}, ${answerId})">✕</button>
+        `;
+        
+        answersList.appendChild(answerDiv);
+        updateQuestionsDataInline();
+      }
+      
+      function removeAnswerInline(questionId, answerId) {
+        const answerItem = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"] .answers-list [data-answer-id="${answerId}"]`);
+        answerItem.remove();
+        updateQuestionsDataInline();
+      }
+      
+      function updateAnswerTypeInline(questionId) {
+        const questionBlock = document.querySelector(`#questions-container-inline [data-question-id="${questionId}"]`).closest('.question-block');
+        const questionType = questionBlock.querySelector('.question-type').value;
+        const answersList = questionBlock.querySelector('.answers-list');
+        const inputs = answersList.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+        
+        inputs.forEach(input => {
+          const newInput = document.createElement('input');
+          newInput.type = questionType === 'single' ? 'radio' : 'checkbox';
+          newInput.name = input.name;
+          newInput.value = input.value;
+          newInput.checked = input.checked;
+          newInput.title = 'Marcar como correcta';
+          newInput.onchange = updateQuestionsDataInline; // Add event listener
+          input.replaceWith(newInput);
+        });
+        
+        updateQuestionsDataInline();
+      }
+      
+      function updateQuestionsDataInline() {
+        const questions = [];
+        document.querySelectorAll('#questions-container-inline .question-block').forEach(block => {
+          const questionId = block.dataset.questionId;
+          const questionText = block.querySelector('.question-text').value;
+          const questionType = block.querySelector('.question-type').value;
+          
+          const answers = [];
+          const answersList = block.querySelector('.answers-list');
+          answersList.querySelectorAll('.answer-item').forEach(answerItem => {
+            const answerId = answerItem.dataset.answerId;
+            const answerText = answerItem.querySelector('.answer-text').value;
+            const isCorrect = answerItem.querySelector('input[type="radio"], input[type="checkbox"]').checked;
+            
+            if (answerText.trim()) {
+              answers.push({
+                id: answerId,
+                text: answerText,
+                is_correct: isCorrect
+              });
+            }
+          });
+          
+          if (questionText.trim() && answers.length > 0) {
+            questions.push({
+              id: questionId,
+              text: questionText,
+              type: questionType,
+              answers: answers
+            });
+          }
+        });
+        
+        const hiddenInput = document.getElementById('quiz_questions_inline');
+        if (hiddenInput) {
+          hiddenInput.value = JSON.stringify(questions);
+        }
+      }
+      
+      function renumberQuestionsInline() {
+        document.querySelectorAll('#questions-container-inline .question-block').forEach((block, index) => {
+          block.querySelector('.question-header h4').textContent = `Pregunta ${index + 1}`;
+        });
+      }
+      
+      // Cargar preguntas existentes en modo inline
+      document.addEventListener('DOMContentLoaded', function() {
+        const questionsDataScript = document.getElementById('existing-questions-data');
+        if (questionsDataScript) {
+            try {
+                let existingQuestions = JSON.parse(questionsDataScript.textContent);
+                // Handle potential double-encoding
+                if (typeof existingQuestions === 'string') {
+                    try {
+                        existingQuestions = JSON.parse(existingQuestions);
+                    } catch (e) {
+                        console.warn("Could not parse double-encoded JSON, using string as is.");
+                    }
+                }
+
+                const container = document.getElementById('questions-container-inline');
+                
+                if (container && Array.isArray(existingQuestions)) {
+                    existingQuestions.forEach(question => {
+                        const questionId = questionIdCounterInline++;
+                        
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'question-block';
+                        questionDiv.dataset.questionId = questionId;
+                        
+                        // Escape values safely
+                        const qText = question.text ? question.text.replace(/"/g, '&quot;') : '';
+                        
+                        questionDiv.innerHTML = `
+                          <div class="question-header">
+                            <h4>Pregunta ${questionId + 1}</h4>
+                            <button type="button" class="btn-danger-small" onclick="removeQuestionInline(${questionId})">✕ Eliminar</button>
+                          </div>
+                          <div class="form-group">
+                            <label>Enunciado de la pregunta</label>
+                            <input type="text" class="question-text" placeholder="Escribe la pregunta aquí" value="${qText}" oninput="updateQuestionsDataInline()" required>
+                          </div>
+                          <div class="form-group">
+                            <label>Tipo de respuesta</label>
+                            <select class="question-type" onchange="updateAnswerTypeInline(${questionId})">
+                              <option value="single" ${question.type === 'single' ? 'selected' : ''}>Selección única</option>
+                              <option value="multiple" ${question.type === 'multiple' ? 'selected' : ''}>Selección múltiple</option>
+                            </select>
+                          </div>
+                          <div class="answers-container" data-question-id="${questionId}">
+                            <label>Opciones de respuesta</label>
+                            <div class="answers-list"></div>
+                            <button type="button" class="btn-secondary-small" onclick="addAnswerInline(${questionId})">+ Agregar opción</button>
+                          </div>
+                        `;
+                        
+                        container.appendChild(questionDiv);
+                        
+                        // Agregar las respuestas existentes
+                        const answersList = questionDiv.querySelector('.answers-list');
+                        if (question.answers && Array.isArray(question.answers)) {
+                            question.answers.forEach((answer, answerIdx) => {
+                                const answerDiv = document.createElement('div');
+                                answerDiv.className = 'answer-item';
+                                answerDiv.dataset.answerId = answerIdx;
+                                
+                                const aText = answer.text ? answer.text.replace(/"/g, '&quot;') : '';
+                                
+                                answerDiv.innerHTML = `
+                                    <input type="${question.type === 'single' ? 'radio' : 'checkbox'}" 
+                                           name="correct_inline_${questionId}" 
+                                           value="${answerIdx}"
+                                           ${answer.is_correct ? 'checked' : ''}
+                                           onchange="updateQuestionsDataInline()"
+                                           title="Marcar como correcta">
+                                    <input type="text" 
+                                           class="answer-text" 
+                                           placeholder="Opción ${answerIdx + 1}" 
+                                           value="${aText}"
+                                           oninput="updateQuestionsDataInline()" 
+                                           required>
+                                    <button type="button" class="btn-remove-answer" onclick="removeAnswerInline(${questionId}, ${answerIdx})">✕</button>
+                                `;
+                                answersList.appendChild(answerDiv);
+                            });
+                        }
+                    });
+                    
+                    updateQuestionsDataInline();
+                }
+            } catch (e) {
+                console.error("Error loading quiz questions:", e);
+            }
+        }
+      });
+    </script>
+  </div>
+  <div id="jsFeedbackModal" class="modal-backdrop" style="display: none;">
+  <div class="modal-content feedback-content">
+    
+    <div class="feedback-icon icon-warning">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+
+    <h3 class="feedback-title">Atención</h3>
+    <p class="feedback-text" id="jsFeedbackText">Mensaje por defecto</p>
+
+    <button type="button" class="btn btn-primary btn-wide" onclick="closeJsModal()">
+      Aceptar
+    </button>
+
+  </div>
+</div>
+
+<script>
+  function toggleExamPanel() {
+    const panel = document.getElementById('create-exam-panel');
+    const contentsPanel = document.querySelector('.contents-panel');
+
+    if (panel.style.display === 'none' || panel.style.display === '') {
+      panel.style.display = 'block';
+      if (contentsPanel) contentsPanel.style.display = 'none';
+      
+      // Scroll to panel
+      panel.scrollIntoView({ behavior: 'smooth' });
+      
+      // Opcional: Quitar visualmente la selección del módulo actual
+      document.querySelectorAll('.module-card.selected').forEach(card => {
+          card.dataset.wasSelected = "true";
+          card.classList.remove('selected');
+      });
+
+    } else {
+      panel.style.display = 'none';
+      if (contentsPanel) contentsPanel.style.display = 'block';
+      
+      // Restaurar selección
+      document.querySelectorAll('.module-card[data-was-selected="true"]').forEach(card => {
+          card.classList.add('selected');
+          delete card.dataset.wasSelected;
+      });
+    }
+  }
+</script>
+{% endblock %}
+

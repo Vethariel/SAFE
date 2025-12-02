@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Crear cuenta — SAFE
+{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'accounts/css/sign_up.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="shell">
+    <div class="card sign_up-card">
+      
+      <header class="top-header">
+        <img class="logo-small" src="{% static 'img/safe_logo.jpeg' %}" alt="SAFE" />
+        <h1 class="main-title">Crear cuenta nueva</h1>
+        <p class="subtitle">Únete a SAFE Academy</p>
+      </header>
+
+      <form method="post" action= "{% url 'user_add' %}">
+        {% csrf_token %}
+
+        <div class="field-group">
+            <label for="username" class="label">Username</label>
+            <input id="username" name="username" placeholder="juanperez" required type="text" class="input" 
+            value="{{ username|default:'' }}"/>
+        </div>
+
+        <div class="field-group mt">
+            <label for="first_name" class="label">Nombre/s</label>
+            <input id="first_name" name="first_name" placeholder="Juan" required type="text" class="input" 
+            value="{{ first_name|default:'' }}"/>
+        </div>
+
+        <div class="field-group mt">
+            <label for="last_name" class="label">Apellido/s</label>
+            <input id="last_name" name="last_name" placeholder="Pérez" required type="text" class="input" 
+            value="{{ last_name|default:'' }}"/>
+        </div>
+
+        <div class="field-group mt">
+            <label for="email" class="label">Correo electrónico</label>
+            <input id="email" name="email" placeholder="tucorreo@empresa.com" required type="email" class="input" 
+            value="{{ email|default:'' }}"/>
+        </div>
+
+        <div class="field-group mt">
+            <label for="password" class="label">Contraseña</label>
+            <input id="password" name="password" placeholder="********" required type="password" class="input" />
+        </div>
+
+        <div class="field-group mt">
+            <label for="confirm_password" class="label">Confirmar contraseña</label>
+            <input id="confirm_password" name="confirm_password" placeholder="********" required type="password" class="input" />
+        </div>
+
+        <div class="error-container">
+            {% if error_msg %}
+                <span class="error-text">{{ error_msg }}</span>
+            {% endif %}
+        </div>
+
+        <div class="actions-row">
+          <button type="submit" class="btn btn-gold">Registrarse</button>
+          <a href="{% url 'log' %}" class="btn-cancel">Cancelar</a>
+        </div>
+
+        
+
+      </form>
+    </div>
+  </div>
+{% endblock %}

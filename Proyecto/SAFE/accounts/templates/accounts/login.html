@@ -1,76 +1,55 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Usuarios — SAFE{% endblock %}
+{% block title %}
+  Iniciar Sesión - SAFE
+{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'accounts/css/usuarios.css' %}">
+  <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="shell">
-  <div class="card">
-    <header class="top">
-      <img class="logo" src="{% static 'img/safe_logo.jpeg' %}" alt="SAFE">
-      <div>
-        <p class="subtitle">Sistema Académico de Formación Empresarial</p>
-        <h1 class="title">Usuarios</h1>
-      </div>
-    </header>
-
-    <div class="grid">
-      <section class="panel">
-        <h2 class="h2">Agregar usuario</h2>
-        <form method="post" action="{% url 'user_add' %}">
-          {% csrf_token %}
-          <label for="username" class="label">Nombre</label>
-          <input id="username" name="username" placeholder="Nombre" required type="text" class="input">
-
-          <label for="email" class="label mt">Email</label>
-          <input id="email" name="email" placeholder="Email" required type="email" class="input">
-
-          <div class="actions">
-            <button class="btn btn-gold">Agregar</button>
-            <span class="muted">Se creará con los valores ingresados.</span>
-          </div>
-        </form>
-      </section>
-
-      <section class="panel">
-        <h2 class="h2">Listado</h2>
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th style="width:80px">ID</th>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th style="width:140px"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for u in usuarios %}
-              <tr>
-                <td>{{ u.id }}</td>
-                <td>{{ u.username }}</td>
-                <td>{{ u.email }}</td>
-                <td>
-                  <form method="post" action="{% url 'user_del' u.id %}" style="display:inline">
-                    {% csrf_token %}
-                    <button class="btn btn-danger" onclick="return confirm('¿Eliminar {{u.username}}?')">Eliminar</button>
-                  </form>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td class="empty" colspan="4">Sin usuarios</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+  <div class="shell">
+    <div class="card login-card">
+      
+      <header class="top">
+        <img class="logo" src="{% static 'img/safe_logo.jpeg' %}" alt="SAFE" />
+        <div>
+          <p class="subtitle">Sistema Académico de Formación Empresarial</p>
         </div>
-      </section>
+      </header>
+
+      <form method="post" action="{% url 'log' %}">
+        {% csrf_token %}
+
+        <label for="email" class="label">Correo</label>
+        <input id="email" name="email" placeholder="tucorreo@empresa.com" required type="email" class="input" />
+
+        <label for="password" class="label mt">Contraseña</label>
+        <input id="password" name="password" placeholder="********" required type="password" class="input" />
+
+        <div class="error-container">
+          {% if messages %}
+            {% for message in messages %}
+              <span class="error-text">{{ message }}</span>
+            {% endfor %}
+          {% endif %}
+          {% if error_login %}
+            <span class="error-text">{{ error_login }}</span>
+          {% endif %}
+          {% if error_msg %}
+            <span class="error-text">{{ error_msg }}</span>
+          {% endif %}
+        </div>
+
+        <div class="actions column-actions">
+          <button class="btn btn-gold btn-full">Iniciar sesión</button>
+        </div>
+
+        
+
+      </form>
     </div>
   </div>
-</div>
 {% endblock %}

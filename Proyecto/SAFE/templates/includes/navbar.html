@@ -1,14 +1,24 @@
 {% load static %}
 <header class="safe-navbar">
-    <img src="{% static 'img/safe_logo.jpeg' %}" alt="SAFE Logo" class="logo">
+  <!-- <img src="{% static 'img/safe_logo.jpeg' %}" alt="SAFE Logo" class="logo"> -->
+  <nav class="navbar-nav">
+    <a href="{% url 'my_learning' %}" class="nav-link {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'my_learning' %}active{% endif %}">My Learning</a>
+    <a href="{% url 'catalog' %}" class="nav-link {% if request.resolver_match.url_name == 'catalog' %}active{% endif %}">Catalog</a>
 
-    <nav>
-        <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">My Learning</a>
-        <a href="{% url 'catalog' %}" class="{% if request.resolver_match.url_name == 'catalog' %}active{% endif %}">Catalog</a>
-    </nav>
-    
-    <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
-        <!-- Aqui irían el buscador, notificaciones y perfil -->
-        <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Perfil</a>
-    </div>
+    {% if request.user.is_authenticated and request.user.role == 'analistaTH' %}
+      <a href="{% url 'admin_panel' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_panel' %}active{% endif %}">Administración</a>
+    {% endif %}
+
+    {% if request.user.is_authenticated and request.user.role == 'supervisor' %}
+      <a href="{% url 'supervisor_panel' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_panel' %}active{% endif %}">Supervisión</a>
+    {% endif %}
+
+    <a href="{% url 'profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Perfil</a>
+
+    {% if request and request.user.is_authenticated %}
+      <div class="nav-right">
+        <a href="{% url 'logout' %}" class="logout-btn" style="background:#ef4444;color:#fff;padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Cerrar sesión</a>
+      </div>
+    {% endif %}
+  </nav>
 </header>

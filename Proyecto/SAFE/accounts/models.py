@@ -17,6 +17,9 @@ class AppUser(AbstractUser):
     # Sobrescribir campos heredados
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100, verbose_name='name')
+    last_name = models.CharField(max_length=100, verbose_name='last name')
+    password = models.CharField(max_length=128, verbose_name='password')
+    
     
     # Campos personalizados
     role = models.CharField(

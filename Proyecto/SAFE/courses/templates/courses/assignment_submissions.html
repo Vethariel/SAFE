@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Envíos - {{ content.title }}{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <h1>Envíos de {{ content.title }}</h1>
+    <p>{{ course.name }}</p>
+    <a href="{% url 'course_detail_accessible' course.id %}">Volver al curso</a>
+
+    {% if submissions %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Fecha envío</th>
+            <th>Puntaje</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in submissions %}
+            <tr>
+              <td>{{ s.course_inscription.app_user }}</td>
+              <td>{{ s.completed_at|default:s.started_at|default:"-" }}</td>
+              <td>{{ s.score|default:"-" }}</td>
+              <td>
+                <form method="post" action="{% url 'grade_assignment' s.id %}">
+                  {% csrf_token %}
+                  <input type="number" name="score" min="0" required placeholder="Puntaje">
+                  <button type="submit">Calificar</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No hay envíos aún.</p>
+    {% endif %}
+  </div>
+{% endblock %}

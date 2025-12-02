@@ -12,5 +12,10 @@ __pycache__/
 .env
 .idea/
 .vscode/
+.mypy_cache/
 migrations/
 temp/
+media/
+.ruff_cache/
+
+Proyecto/SAFE/accounts/management/

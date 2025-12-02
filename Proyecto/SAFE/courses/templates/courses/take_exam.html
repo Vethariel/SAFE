@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resolver evaluaci&oacute;n - SAFE{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --safe-gold: #d4af37;
+    --safe-gold-hover: #b38f1f;
+    --safe-ink: #111827;
+    --safe-muted: #6b7280;
+    --safe-border: #e5e7eb;
+  }
+
+  .exam-shell {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .exam-header {
+    background: white;
+    border: 1px solid var(--safe-border);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--safe-gold);
+    font-weight: 800;
+  }
+
+  .muted {
+    color: var(--safe-muted);
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+
+  .pill-type {
+    background: #eef2ff;
+    color: #4338ca;
+    border-color: #e0e7ff;
+  }
+
+  .pill-score {
+    background: #ecfdf3;
+    color: #065f46;
+    border-color: #bbf7d0;
+  }
+
+  .pill-correct {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+  }
+
+  .pill-wrong {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecdd3;
+  }
+
+  .exam-body {
+    background: white;
+    border: 1px solid var(--safe-border);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .exam-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .exam-title {
+    margin: 4px 0 6px;
+    font-size: 22px;
+    color: var(--safe-ink);
+  }
+
+  .questions-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .question-card {
+    border: 1px solid var(--safe-border);
+    border-radius: 14px;
+    padding: 14px;
+    background: #f9fafb;
+  }
+
+  .question-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .question-title {
+    margin: 0 0 10px 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--safe-ink);
+  }
+
+  .answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .answer-option {
+    position: relative;
+    border: 1px solid var(--safe-border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .answer-option:hover {
+    border-color: var(--safe-gold);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  .answer-option .answer-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .answer-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    flex: 1;
+  }
+
+  .answer-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #9ca3af;
+    background: white;
+  }
+
+  .answer-text {
+    color: var(--safe-ink);
+    font-size: 15px;
+  }
+
+  .answer-option input:checked + .answer-main .answer-icon {
+    background: var(--safe-gold);
+    border-color: var(--safe-gold);
+    color: #0f1720;
+  }
+
+  .answer-option input:checked + .answer-main .answer-text {
+    font-weight: 700;
+  }
+
+  .answer-option.is-correct {
+    background: #ecfdf3;
+    border-color: #6ee7b7;
+  }
+
+  .answer-option.is-correct .answer-icon {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: white;
+  }
+
+  .answer-option.is-selected-wrong {
+    background: #fff7ed;
+    border-color: #fdba74;
+  }
+
+  .answer-option.is-selected-wrong .answer-icon {
+    background: #f97316;
+    border-color: #f97316;
+    color: white;
+  }
+
+  .question-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .actions-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 4px;
+  }
+
+  .btn {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--safe-ink);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #0b1222;
+  }
+
+  .btn-secondary {
+    background: white;
+    color: var(--safe-ink);
+    border: 1px solid var(--safe-border);
+  }
+
+  .score-banner {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #ecfdf3;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  @media (max-width: 768px) {
+    .exam-header,
+    .exam-body {
+      padding: 14px;
+    }
+
+    .question-card {
+      padding: 12px;
+    }
+
+    .exam-header {
+      flex-direction: column;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="exam-shell">
+      <div class="exam-header">
+        <div>
+          <p class="eyebrow">Curso</p>
+          <h2 style="margin:4px 0 6px;">{{ course.name }}</h2>
+          <p class="muted" style="margin:0;">{{ course.description|default:"" }}</p>
+        </div>
+        <a class="pill" href="{% url 'course_detail_accessible' course.id %}">Volver al curso</a>
+      </div>
+
+      <div class="exam-body">
+        <div class="exam-meta">
+          <div>
+            <p class="eyebrow">Evaluaci&oacute;n</p>
+            <h3 class="exam-title">{{ content.title }}</h3>
+            <p class="muted" style="margin:0;">{{ content.description|default:"" }}</p>
+          </div>
+          <div class="actions-row">
+            <span class="pill pill-type">Cuestionario</span>
+            {% if results %}
+              <span class="pill pill-score">Puntaje: {{ score }}/{{ total }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if questions %}
+          <form method="post" class="questions-form">
+            {% csrf_token %}
+            {% for q in questions %}
+              <div class="question-card">
+                <div class="question-card__header">
+                  <div>
+                    <p class="eyebrow">Pregunta {{ forloop.counter }}</p>
+                    <h4 class="question-title">{{ q.text|default:"Pregunta" }}</h4>
+                  </div>
+                  <span class="pill pill-type">
+                    {% if q.allows_multiple %}Selecci&oacute;n m&uacute;ltiple{% else %}Selecci&oacute;n &uacute;nica{% endif %}
+                  </span>
+                </div>
+
+                {% if q.options %}
+                  <div class="answers-list">
+                    {% for opt in q.options %}
+                      {% with res=q.result %}
+                        <label class="answer-option
+                          {% if res and opt.id in res.correct_ids %} is-correct{% endif %}
+                          {% if res and opt.id in res.selected and opt.id not in res.correct_ids %} is-selected-wrong{% endif %}
+                        ">
+                          <input
+                            type="{% if q.allows_multiple %}checkbox{% else %}radio{% endif %}"
+                            class="answer-input"
+                            name="q-{{ q.id }}"
+                            value="{{ opt.id }}"
+                            {% if res and opt.id in res.selected %}checked{% endif %}
+                          />
+                          <div class="answer-main">
+                            <span class="answer-icon">
+                              {% if res and opt.id in res.correct_ids %}&#10003;{% else %}&bull;{% endif %}
+                            </span>
+                            <span class="answer-text">{{ opt.text|default:"Opci&oacute;n" }}</span>
+                          </div>
+                          {% if res %}
+                            {% if opt.id in res.correct_ids %}
+                              <span class="pill pill-correct">Correcta</span>
+                            {% elif opt.id in res.selected %}
+                              <span class="pill pill-wrong">Tu respuesta</span>
+                            {% endif %}
+                          {% endif %}
+                        </label>
+                      {% endwith %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+
+            <div class="question-footer">
+              {% if results %}
+                <div class="score-banner">Resultado: {{ score }}/{{ total }}</div>
+              {% endif %}
+              <div class="actions-row">
+                <button type="submit" class="btn btn-primary">Enviar respuestas</button>
+                <a class="btn btn-secondary" href="{% url 'course_detail_accessible' course.id %}">Volver</a>
+              </div>
+            </div>
+          </form>
+        {% else %}
+          <p class="muted" style="margin:0;">Este examen no tiene preguntas configuradas.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

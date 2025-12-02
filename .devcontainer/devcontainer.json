@@ -12,8 +12,10 @@
         "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "batisteo.vscode-django",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg"
+        "ms-python.mypy-type-checker",
+        "charliermarsh.ruff",
+        "junstyle.vscode-django-support",
+        "usernamehw.errorlens"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
@@ -32,8 +34,7 @@
   "forwardPorts": [8000, 5432],
   "portsAttributes": {
     "8000": {
-      "label": "Django Server",
-      "onAutoForward": "notify"
+      "label": "Django Server"
     },
     "5432": {
       "label": "PostgreSQL"

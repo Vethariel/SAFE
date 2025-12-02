@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ path.name }} - Ruta de aprendizaje{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'courses/css/catalog.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="page-header">
+      <div class="page-header-content">
+        <p class="eyebrow">Ruta de aprendizaje</p>
+        <h1>{{ path.name }}</h1>
+        <p class="page-subtitle">{{ path.description|default:"Sin descripción" }}</p>
+        <p class="page-subtitle">{{ path.estimated_duration|default:"0" }}h estimadas · {{ course_cards|length }} curso(s)</p>
+      </div>
+      <div class="card-badges" style="margin-top:6px;">
+        <span class="status-badge status-{{ path.status }}">{{ path.get_status_display }}</span>
+      </div>
+    </div>
+
+    {% if course_cards %}
+      <div class="courses-grid">
+        {% for card in course_cards %}
+          {% with course=card.course %}
+            <div class="course-card">
+              <div class="course-card-header">
+                {% if course.header_img %}
+                  <img src="{{ course.header_img.url }}" alt="{{ course.name }}" />
+                {% else %}
+                  <span class="placeholder-icon">SAFE</span>
+                {% endif %}
+                <div class="card-badges">
+                  <span class="status-badge status-{{ course.status }}">{{ course.get_status_display }}</span>
+                  <span class="pill audience-pill">{{ card.audience_label }}</span>
+                </div>
+              </div>
+
+              <div class="course-card-body">
+                <div class="card-header-row">
+                  <div>
+                    <p class="eyebrow">Curso</p>
+                    <h3 class="card-title">{{ course.name }}</h3>
+                  </div>
+                  {% if card.inscription_count %}
+                    <span class="pill muted-pill">{{ card.inscription_count }} personas inscritas</span>
+                  {% endif %}
+                </div>
+
+                <p class="card-description">{{ course.description|default:'Sin descripcion' }}</p>
+
+                <div class="card-meta">
+                  <span class="meta-pill">{{ card.modules_count|default:'0' }} actividades</span>
+                  <span class="meta-pill">{{ course.duration_hours|default:'0' }}h</span>
+                  <span class="meta-pill">{{ card.total_contents|default:'0' }} contenidos</span>
+                </div>
+
+                <div class="progress-row">
+                  <div class="progress-label">
+                    {% if card.progress_percent is not None %}
+                      {{ card.completed_contents }} / {{ card.total_contents }} contenidos ({{ card.progress_percent|floatformat:0 }}%)
+                    {% else %}
+                      Progreso no disponible
+                    {% endif %}
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" style="width: {{ card.progress_percent|default:0|floatformat:0 }}%;"></div>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  {% if card.can_open %}
+                    <a class="btn-primary" href="{% url 'course_detail_accessible' course.id %}">Abrir</a>
+                    <a class="btn-secondary" href="{% url 'course_detail_accessible' course.id %}">Más detalles</a>
+                  {% else %}
+                    <button class="btn-primary btn-disabled" type="button" disabled>No inscrito</button>
+                    <span class="eyebrow">Debes estar inscrito para abrir</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p class="empty-text">Esta ruta aún no tiene cursos asignados.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+

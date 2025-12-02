@@ -1,10 +1,54 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Paths — SAFE{% endblock %}
+{% block title %}Rutas de aprendizaje - SAFE{% endblock %}
 
 {% block extra_css %}
+  <style>
+    .path-card { border:1px solid #e5e7eb; border-radius:12px; padding:14px; background:white; margin-bottom:12px; }
+    .chip { display:inline-block; padding:4px 10px; border-radius:999px; background:#f3f4f6; font-size:12px; margin-right:6px; }
+    .muted { color:#6b7280; }
+  </style>
 {% endblock %}
 
 {% block content %}
+  <div class="container">
+    <h1>Rutas disponibles</h1>
+
+    {% if path_cards %}
+      {% for path, courses in path_cards %}
+        <div class="path-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div>
+              <div style="font-weight:600;font-size:18px;">{{ path.name }}</div>
+              <div class="muted" style="font-size:13px;margin-top:6px;">{{ path.description|default:"Sin descripción" }}</div>
+              <div style="margin-top:8px;">
+                <span class="chip">{{ path.get_status_display }}</span>
+                <span class="chip">{{ path.estimated_duration|default:"0" }}h estimadas</span>
+                <span class="chip">{{ courses|length }} curso(s)</span>
+              </div>
+            </div>
+          </div>
+
+          {% if courses %}
+            <div style="margin-top:12px;">
+              {% for course in courses %}
+                <div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                  <div>
+                    <div style="font-weight:600;">{{ course.name }}</div>
+                    <div class="muted" style="font-size:13px;">{{ course.description|default:"Sin descripción" }}</div>
+                  </div>
+                  <div class="chip">{{ course.get_status_display }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="muted" style="margin-top:10px;">No hay cursos visibles para tu rol en esta ruta.</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No hay rutas visibles para tu cuenta.</p>
+    {% endif %}
+  </div>
 {% endblock %}

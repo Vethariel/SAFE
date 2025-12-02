@@ -15,36 +15,216 @@ body {
   margin: 0;
 }
 
+/* ============================================
+   NAVBAR - Estilo mejorado según diseño
+   ============================================ */
 .safe-navbar {
   background-color: var(--safe-card);
   border-bottom: 1px solid var(--safe-border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Logo y texto SAFE */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--safe-dark);
+  text-decoration: none;
+}
+
+.navbar-logo .logo {
+  height: 2rem;
+  width: auto;
+  border-radius: 0.375rem;
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--safe-dark);
+}
+
+/* Navegación principal */
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.navbar-nav .nav-link {
   padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--safe-ink2);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.navbar-nav .nav-link:hover {
+  background-color: #f3f4f6;
+  color: var(--safe-dark);
+}
+
+.navbar-nav .nav-link.active {
+  background-color: #f3f4f6;
+  color: var(--safe-dark);
+  font-weight: 600;
+}
+
+/* Sección derecha del navbar */
+.navbar-right {
   display: flex;
   align-items: center;
   gap: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  margin-left: auto;
 }
 
-.safe-navbar .logo {
-  height: 3rem; /* 48px */
+/* Buscador */
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: var(--safe-bg);
+  border: 1px solid var(--safe-border);
   border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  gap: 0.5rem;
+  min-width: 200px;
+  transition: border-color 0.2s ease;
 }
 
-.safe-navbar nav a {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
+.search-box:focus-within {
+  border-color: var(--safe-gold);
+  outline: 2px solid rgba(212, 175, 55, 0.1);
+}
+
+.search-icon {
+  font-size: 0.875rem;
+  color: var(--safe-ink2);
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--safe-dark);
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.search-input::placeholder {
+  color: var(--safe-ink2);
+}
+
+/* Notificaciones con badge */
+.notification-bell {
+  position: relative;
+  font-size: 1.25rem;
+  text-decoration: none;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-bell:hover {
+  background-color: #f3f4f6;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  min-width: 1.125rem;
+  text-align: center;
+  line-height: 1;
+}
+
+/* Badge de rol del usuario (sin dropdown) */
+.user-role-badge {
+  padding: 0.5rem 1rem;
+  background-color: var(--safe-bg);
+  border: 1px solid var(--safe-border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--safe-dark);
+  white-space: nowrap;
+  cursor: default;
+}
+
+/* Link de perfil */
+.profile-link {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
   text-decoration: none;
   color: var(--safe-ink2);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.safe-navbar nav a.active,
-.safe-navbar nav a:hover {
-  background-color: #f3f4f6; /* gris claro */
+.profile-link:hover {
+  background-color: #f3f4f6;
   color: var(--safe-dark);
 }
+
+.profile-link.active {
+  background-color: #f3f4f6;
+  color: var(--safe-dark);
+  font-weight: 600;
+}
+
+/* Responsivo para pantallas pequeñas */
+@media (max-width: 768px) {
+  .safe-navbar {
+    padding: 0.5rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .navbar-nav {
+    gap: 0.25rem;
+  }
+
+  .navbar-nav .nav-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .search-box {
+    min-width: 150px;
+  }
+
+  .user-role-badge {
+    display: none;
+    /* Ocultar en móviles para ahorrar espacio */
+  }
+}
+
+/* ============================================
+   OTROS ESTILOS EXISTENTES
+   ============================================ */
 
 .btn {
   padding: 0.375rem 0.75rem;
@@ -75,7 +255,7 @@ body {
 
 .course-card .banner img {
   width: 100%;
-  height: 7rem; /* 112px */
+  height: 7rem;
   object-fit: cover;
 }
 
