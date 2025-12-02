@@ -65,7 +65,12 @@ urlpatterns = [
         courses.create_exam_for_course,
         name="create_exam_for_course",
     ),
-    path("users/<int:user_id>/role/", users.user_change_role, name="user_change_role"),
+    path(
+        "course/<int:course_pk>/exam/create/manual/",
+        views.create_exam_manual,
+        name="create_exam_manual",
+    ),
+    path("users/<int:user_id>/role/", views.user_change_role, name="user_change_role"),
     # Teams
     path("teams/create/", teams.team_create, name="team_create"),
     path("teams/<int:pk>/update/", teams.team_update, name="team_update"),

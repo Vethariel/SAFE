@@ -12,4 +12,9 @@ urlpatterns = [
         views.unenroll_user_course,
         name="unenroll_user_course",
     ),
+    path(
+        "supervisor/unenroll/path/<int:inscription_id>/",
+        views.unenroll_user_path,
+        name="unenroll_user_path",
+    ),
 ]

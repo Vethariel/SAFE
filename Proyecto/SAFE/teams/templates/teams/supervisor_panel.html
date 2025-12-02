@@ -126,30 +126,6 @@
                     <button class="btn-secondary" onclick="openManageModal('{{ member.id }}', '{{ member.first_name }}')">Gestionar</button>
                   </td>
                 </tr>
-
-                <!-- Hidden Data for JS -->
-                <div id="data-user-{{ member.id }}" style="display:none;">
-                  <div class="current-enrollments">
-                    {% for inscription in member.course_inscriptions.all %}
-                      <div class="enrollment-item">
-                        <span><span class="badge badge-course">Curso</span> {{ inscription.course.name }}</span>
-                        <form method="post" action="{% url 'unenroll_user_course' inscription.id %}" style="display:inline;">
-                          {% csrf_token %}
-                          <button type="submit" class="text-danger small-btn" onclick="return confirm('¿Desinscribir?')">&times;</button>
-                        </form>
-                      </div>
-                    {% endfor %}
-                    {% for inscription in member.path_inscriptions.all %}
-                      <div class="enrollment-item">
-                        <span><span class="badge badge-path">Ruta</span> {{ inscription.learning_path.name }}</span>
-                        <!-- Path unenrollment logic would go here if implemented -->
-                      </div>
-                    {% endfor %}
-                    {% if not member.course_inscriptions.all and not member.path_inscriptions.all %}
-                      <div class="p-3 text-muted text-center">Sin inscripciones activas</div>
-                    {% endif %}
-                  </div>
-                </div>
               {% empty %}
                 <tr>
                   <td colspan="3" class="text-center" style="padding: 2rem; color: #6b7280;">No tienes miembros en tu equipo.</td>
@@ -158,6 +134,35 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Hidden Data for JS -->
+        {% for member in team_members %}
+        <div id="data-user-{{ member.id }}" style="display:none;">
+            <div class="current-enrollments">
+            {% for inscription in member.course_inscriptions.all %}
+                <div class="enrollment-item">
+                <span><span class="badge badge-course">Curso</span> {{ inscription.course.name }}</span>
+                <form method="post" action="{% url 'unenroll_user_course' inscription.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="text-danger small-btn" onclick="return confirm('¿Desinscribir?')">&times;</button>
+                </form>
+                </div>
+            {% endfor %}
+            {% for inscription in member.path_inscriptions.all %}
+                <div class="enrollment-item">
+                <span><span class="badge badge-path">Ruta</span> {{ inscription.learning_path.name }}</span>
+                <form method="post" action="{% url 'unenroll_user_path' inscription.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="text-danger small-btn" onclick="return confirm('¿Desinscribir de la ruta?')">&times;</button>
+                </form>
+                </div>
+            {% endfor %}
+            {% if not member.course_inscriptions.all and not member.path_inscriptions.all %}
+                <div class="p-3 text-muted text-center">Sin inscripciones activas</div>
+            {% endif %}
+            </div>
+        </div>
+        {% endfor %}
       </div>
     {% endif %}
 

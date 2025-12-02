@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import HttpResponse
 from django.urls import reverse
 from django.db import transaction
 from django.contrib import messages
@@ -79,9 +78,7 @@ def course_detail(request, pk):
         if selected_content:
             content_edit_form = ContentForm(instance=selected_content)
             if selected_content.material:
-                material_edit_form = MaterialForm(
-                    instance=selected_content.material
-                )
+                material_edit_form = MaterialForm(instance=selected_content.material)
             else:
                 material_edit_form = MaterialForm()
 

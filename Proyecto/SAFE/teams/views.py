@@ -5,7 +5,7 @@ from .models import Team, TeamUser
 from enrollments.models import CourseInscription, PathInscription, ContentProgress
 from enrollments.services import update_inscription_progress
 from courses.models import Course
-from learning_paths.models import LearningPath
+from learning_paths.models import LearningPath, CourseInPath
 from accounts.models import AppUser
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -191,9 +191,19 @@ def enroll_user_path(request):
         )
     else:
         PathInscription.objects.create(app_user=user, learning_path=learning_path)
+
+        # Inscribir automáticamente en todos los cursos de la ruta
+        courses_in_path = CourseInPath.objects.filter(learning_path=learning_path)
+        for cip in courses_in_path:
+            course = cip.course
+            if not CourseInscription.objects.filter(
+                app_user=user, course=course
+            ).exists():
+                CourseInscription.objects.create(app_user=user, course=course)
+
         messages.success(
             request,
-            f"{user.username} inscrito exitosamente en la ruta {learning_path.name}.",
+            f"{user.username} inscrito exitosamente en la ruta {learning_path.name} y sus cursos.",
         )
 
     return redirect("supervisor_panel")
@@ -213,4 +223,21 @@ def unenroll_user_course(request, inscription_id):
 
     inscription.delete()  # O cambiar estado a WITHDRAWN
     messages.success(request, "Inscripción eliminada.")
+    return redirect(reverse("supervisor_panel") + "?tab=equipo")
+
+
+@login_required
+@require_POST
+def unenroll_user_path(request, inscription_id):
+    inscription = get_object_or_404(PathInscription, pk=inscription_id)
+
+    # Verificar permisos
+    if not TeamUser.objects.filter(
+        team__supervisor=request.user, app_user=inscription.app_user
+    ).exists():
+        messages.error(request, "No tienes permiso para gestionar a este usuario.")
+        return redirect("supervisor_panel")
+
+    inscription.delete()
+    messages.success(request, "Inscripción a ruta eliminada.")
     return redirect(reverse("supervisor_panel") + "?tab=equipo")
