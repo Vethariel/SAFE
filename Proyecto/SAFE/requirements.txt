@@ -4,3 +4,4 @@ python-dotenv
 pillow
 ruff
 mypy
+django-stubs

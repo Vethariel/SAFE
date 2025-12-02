@@ -8,8 +8,7 @@ from django.utils import timezone
 
 from accounts.models import AppUser
 from courses.models import Course
-from enrollments.models import CourseInscription, PathInscription
-from . import models
+from enrollments.models import CourseInscription
 
 from enrollments.services import get_courses_for_user
 from learning_paths.models import LearningPath

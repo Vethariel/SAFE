@@ -217,8 +217,8 @@
                   <td>{{ team.members.count }}</td>
                   <td class="text-right">
                     <div class="actions-group">
-                      <button class="action-link text-primary" onclick="openManageMembersModal('{{ team.id }}', '{{ team.name }}')">Miembros</button>
-                      <button class="action-link text-primary" onclick="openEditTeamModal('{{ team.id }}', '{{ team.name }}', '{{ team.description }}', '{{ team.supervisor.id }}')">Editar</button>
+                      <button class="action-link text-primary" data-team-id="{{ team.id }}" data-team-name="{{ team.name }}" data-url="{% url 'team_add_member' team.id %}" onclick="openManageMembersModal(this)">Miembros</button>
+                      <button class="action-link text-primary" data-team-id="{{ team.id }}" data-team-name="{{ team.name }}" data-team-desc="{{ team.description }}" data-team-sup="{{ team.supervisor.id }}" data-url="{% url 'team_update' team.id %}" onclick="openEditTeamModal(this)">Editar</button>
                       <form method="post" action="{% url 'team_delete' team.id %}" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este equipo?');">
                         {% csrf_token %}
                         <button type="submit" class="action-link text-danger">Eliminar</button>
@@ -389,74 +389,7 @@
     </div>
   {% endfor %}
 
-  <script>
-    // Función para abrir el modal y setear los datos
-    function openEnrollModal(userId, username) {
-      const modal = document.getElementById('enrollModal')
-      const inputId = document.getElementById('modalUserId')
-      const title = document.getElementById('modalTitle')
-    
-      // Asignamos el ID del usuario al input oculto
-      inputId.value = userId
-    
-      // (Opcional) Ponemos el nombre en el título para que se vea pro
-      title.innerText = `Inscribir a ${username} en un curso`
-    
-      // Mostramos el modal
-      modal.style.display = 'flex'
-    }
-    
-    // Función para cerrar el modal
-    function closeEnrollModal() {
-      const modal = document.getElementById('enrollModal')
-      modal.style.display = 'none'
-    }
-    
-    // Cerrar si se hace clic fuera de la cajita blanca
-    window.onclick = function (event) {
-      const modal = document.getElementById('enrollModal')
-      if (event.target == modal) {
-        modal.style.display = 'none'
-      }
-    }
-    
-    function openCreateTeamModal() {
-      document.getElementById('createTeamModal').style.display = 'flex'
-    }
-    function closeCreateTeamModal() {
-      document.getElementById('createTeamModal').style.display = 'none'
-    }
-    
-    function openEditTeamModal(id, name, description, supervisorId) {
-      document.getElementById('editTeamModal').style.display = 'flex'
-      document.getElementById('editTeamName').value = name
-      document.getElementById('editTeamDescription').value = description
-      document.getElementById('editTeamSupervisor').value = supervisorId
-      // Construct URL dynamically
-      // Assuming URL pattern is /administration/teams/<pk>/update/
-      // We can use a dummy URL and replace it
-      var url = "{% url 'team_update' 999999 %}".replace('999999', id)
-      document.getElementById('editTeamForm').action = url
-    }
-    function closeEditTeamModal() {
-      document.getElementById('editTeamModal').style.display = 'none'
-    }
-    
-    function openManageMembersModal(teamId, teamName) {
-      document.getElementById('manageMembersModal').style.display = 'flex'
-      document.getElementById('manageMembersTitle').innerText = 'Miembros de ' + teamName
-    
-      var url = "{% url 'team_add_member' 999999 %}".replace('999999', teamId)
-      document.getElementById('addMemberForm').action = url
-    
-      // Copy members list
-      var content = document.getElementById('team-members-' + teamId).innerHTML
-      document.getElementById('membersListContainer').innerHTML = content
-    }
-    function closeManageMembersModal() {
-      document.getElementById('manageMembersModal').style.display = 'none'
-    }
-  </script>
+  <script src="{% static 'administration/js/admin_panel.js' %}"></script>
 
   <!-- ================= MODAL DE MENSAJES (FEEDBACK) ================= -->
   {% if messages %}
@@ -467,13 +400,17 @@
           <div class="feedback-icon {% if message.tags == 'success' %}
               
               
+              
               icon-success
+
 
 
             {% else %}
               
               
+              
               icon-warning
+
 
 
             {% endif %}">

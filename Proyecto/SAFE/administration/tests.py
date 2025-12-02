@@ -7,7 +7,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from .forms import ExamUploadForm
 from accounts.models import AppUser
 from administration.models import RoleChangeLog
-from django.test import TestCase
 from django.contrib.auth import get_user_model
 from .services import change_role
 User = get_user_model()

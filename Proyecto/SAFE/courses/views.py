@@ -17,88 +17,8 @@ from enrollments.services import (
 )
 from .services import get_ordered_contents, get_ordered_modules
 from .forms import QuestionUploadForm
-from .models import Content, Course, Exam, Material, Module
-
-
-def _to_json_safe(value):
-    """
-    Convierte estructuras anidadas (listas, diccionarios, sets) a una forma
-    segura para JSONField (los sets se transforman en listas).
-    """
-    if isinstance(value, set):
-        return [_to_json_safe(v) for v in value]
-    if isinstance(value, list):
-        return [_to_json_safe(v) for v in value]
-    if isinstance(value, dict):
-        return {k: _to_json_safe(v) for k, v in value.items()}
-    return value
-
-
-def parse_evaluacion(texto: str):
-    """Parsea preguntas tipo 'Q:' y opciones 'O:' desde un texto."""
-    preguntas = []
-    pregunta_actual = None
-
-    for line in texto.splitlines():
-        line = line.strip()
-        if not line:
-            # Línea vacía: separador entre preguntas
-            continue
-
-        if line.startswith("Q:"):
-            # Guardar pregunta anterior, si había
-            if pregunta_actual is not None:
-                preguntas.append(pregunta_actual)
-
-            _, resto = line.split("Q:", 1)
-            qid, texto_preg = resto.split("|", 1)
-
-            pregunta_actual = {
-                "id": qid.strip(),
-                "texto": texto_preg.strip(),
-                "opciones": [],
-            }
-
-        elif line.startswith("O:"):
-            if pregunta_actual is None:
-                raise ValueError("Opción sin pregunta previa")
-
-            _, resto = line.split("O:", 1)
-            oid, texto_opt, flag = resto.split("|", 2)
-
-            es_correcta = flag.strip() == "1"
-
-            pregunta_actual["opciones"].append(
-                {
-                    "id": oid.strip(),
-                    "texto": texto_opt.strip(),
-                    "es_correcta": es_correcta,
-                }
-            )
-
-        else:
-            raise ValueError(f"Línea con formato inválido: {line}")
-
-    # Agregar la última pregunta si existe
-    if pregunta_actual is not None:
-        preguntas.append(pregunta_actual)
-
-    # Validación extra: cada pregunta con al menos una correcta
-    for p in preguntas:
-        if not any(o["es_correcta"] for o in p["opciones"]):
-            raise ValueError(f"La pregunta '{p['id']}' no tiene opción correcta")
-
-    return preguntas
-
-
-def is_txt_file(uploaded_file) -> bool:
-    """
-    Verifica si el archivo subido corresponde a un .txt
-    usando la extensión del nombre del archivo.
-    """
-    if not hasattr(uploaded_file, "name"):
-        return False
-    return uploaded_file.name.lower().endswith(".txt")
+from .models import Content, Course, Exam
+from .utils import _to_json_safe, parse_evaluacion, is_txt_file
 
 
 def create_exam_view(request):
@@ -106,8 +26,6 @@ def create_exam_view(request):
         form = QuestionUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
-            course = form.cleaned_data["course"]
-            difficulty = form.cleaned_data["difficulty"]
             uploaded_file = form.cleaned_data["file"]
 
             # Placeholder: aquí iría la lógica de negocio para analizar el .txt
@@ -195,9 +113,7 @@ def course_detail_accessible(request, pk):
     )
     selected_module = next((m for m in modules if m.id == selected_module_id), None)
 
-    selected_contents = (
-        get_ordered_contents(selected_module) if selected_module else []
-    )
+    selected_contents = get_ordered_contents(selected_module) if selected_module else []
     visible_contents = get_contents_for_user_in_course(request.user, course)
     visible_ids = {c.id for c in visible_contents}
 
